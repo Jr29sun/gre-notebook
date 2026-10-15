@@ -255,6 +255,13 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
 
   <div class="stats" id="stats"></div>
 
+  <details class="pp" id="backup">
+    <summary>Backup &amp; restore · export or import your records, edits and known words</summary>
+    <p class="pp-note">Everything you add, change or practise is stored in this browser only. Press Export, copy the text, then paste it into this box on the other device and press Import. Import replaces what is on that device.</p>
+    <textarea id="bk-text" rows="5" aria-label="Backup text"></textarea>
+    <div class="actions"><button class="toggle" data-a="export">Export</button><button class="toggle primary" data-a="import">Import</button><span class="label" id="bk-msg"></span></div>
+  </details>
+
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" id="tab-wrong" aria-selected="true" data-tab="wrong">Wrong answers<span class="n" id="n-wrong"></span></button>
     <button class="tab" role="tab" id="tab-gloss" aria-selected="false" data-tab="gloss">Glossary<span class="n" id="n-gloss"></span></button>
@@ -283,12 +290,6 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
     <div id="r-view"></div>
   </section>
 
-  <details class="pp" id="backup">
-    <summary>Backup &amp; restore · move your edits and progress to another device</summary>
-    <p class="pp-note">Everything you add, change or practise is stored in this browser only. Press Export, copy the text, then paste it into this box on the other device and press Import. Import replaces what is on that device.</p>
-    <textarea id="bk-text" rows="5" aria-label="Backup text"></textarea>
-    <div class="actions"><button class="toggle" data-a="export">Export</button><button class="toggle primary" data-a="import">Import</button><span class="label" id="bk-msg"></span></div>
-  </details>
 </div>
 <div class="ov" id="ed" role="dialog" aria-modal="true" aria-label="Editor" hidden></div>
 
