@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GRE Error Notebook</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
@@ -213,12 +218,33 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
   :root:not([data-theme="light"]) { --lv0: #232b3a; --lv1: #0e4429; --lv2: #006d32; --lv3: #26a641; --lv4: #39d353; --lvt0: #9aa4b8; --lvt1: #c9f3d4; --lvt2: #e5f7ea; --lvt3: #0b2412; --lvt4: #0b2412; }
 }
 :root[data-theme="dark"] { --lv0: #232b3a; --lv1: #0e4429; --lv2: #006d32; --lv3: #26a641; --lv4: #39d353; --lvt0: #9aa4b8; --lvt1: #c9f3d4; --lvt2: #e5f7ea; --lvt3: #0b2412; --lvt4: #0b2412; }
+/* editor */
+.ov { position: fixed; inset: 0; z-index: 20; background: rgba(10, 14, 22, 0.55); overflow-y: auto; padding: 20px 12px; }
+.ov[hidden] { display: none; }
+.ed { max-width: 720px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.ed h2 { margin: 0; font-family: var(--font-read); font-size: 1.25rem; font-weight: 600; }
+.ed-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ed label { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.ed input[type="text"], .ed input[type="number"], .ed textarea, .ed select { width: 100%; min-width: 0; font-family: var(--font-ui); font-size: 0.95rem; letter-spacing: 0; text-transform: none; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.ed textarea { line-height: 1.5; resize: vertical; }
+.ed-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.ed-blank { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.ed-opt { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto auto auto; gap: 8px; align-items: center; }
+.ed-opt .k { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.ed .ck { flex-direction: row; align-items: center; gap: 4px; font-family: var(--font-ui); font-size: 0.82rem; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.ed .hint { font-size: 0.84rem; color: var(--muted); }
+.ed-err { color: var(--bad); background: var(--bad-soft); border-radius: 6px; padding: 8px 12px; }
+@media (max-width: 520px) { .ed-opt { grid-template-columns: 1.6em minmax(0, 1fr) auto; } .ed-opt .ck { grid-column: 2 / -1; } }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .l0 { background: var(--lv0); color: var(--lvt0); }
 .l1 { background: var(--lv1); color: var(--lvt1); }
 .l2 { background: var(--lv2); color: var(--lvt2); }
 .l3 { background: var(--lv3); color: var(--lvt3); }
 .l4 { background: var(--lv4); color: var(--lvt4); }
 </style>
+</head>
+<body>
+
 
 <div class="wrap">
   <header>
@@ -248,6 +274,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
         <button class="chip" id="m-list" aria-pressed="true">List</button>
         <button class="chip" id="m-cards" aria-pressed="false">Flashcards</button>
       </div>
+      <button class="chip primary" data-a="addw">+ Add word</button>
     </div>
     <div id="g-view"></div>
   </section>
@@ -255,7 +282,15 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
   <section id="panel-retry" role="tabpanel" aria-labelledby="tab-retry" hidden>
     <div id="r-view"></div>
   </section>
+
+  <details class="pp" id="backup">
+    <summary>Backup &amp; restore · move your edits and progress to another device</summary>
+    <p class="pp-note">Everything you add, change or practise is stored in this browser only. Press Export, copy the text, then paste it into this box on the other device and press Import. Import replaces what is on that device.</p>
+    <textarea id="bk-text" rows="5" aria-label="Backup text"></textarea>
+    <div class="actions"><button class="toggle" data-a="export">Export</button><button class="toggle primary" data-a="import">Import</button><span class="label" id="bk-msg"></span></div>
+  </details>
 </div>
+<div class="ov" id="ed" role="dialog" aria-modal="true" aria-label="Editor" hidden></div>
 
 <script>
 /* ---------- DATA: add further wrong questions and words here ---------- */
@@ -853,19 +888,22 @@ function renderWrong() {
   QUESTIONS.forEach(function (q) { var g = qGroup(q); if (groups.indexOf(g) < 0) { groups.push(g); } });
   $("#w-filters").innerHTML = ["all"].concat(groups).map(function (g) {
     return '<button class="chip" data-wf="' + esc(g) + '" aria-pressed="' + (state.wFilter === g) + '">' + (g === "all" ? "All" : esc(g)) + '</button>';
-  }).join("");
+  }).join("") + '<span style="flex:1"></span><button class="chip primary" data-a="addq">+ Add question</button>';
   var items = QUESTIONS.filter(function (q) { return state.wFilter === "all" || qGroup(q) === state.wFilter; });
   $("#w-list").innerHTML = items.map(function (q) {
     var text = q.stem
       ? esc(q.stem) + (/[?.]$/.test(q.stem) ? "" : " …")
       : esc(q.passage).replace(/\{(\w+)\}/g, function (m, id) { return '<span class="blankline">' + (q.blanks.length > 1 ? "(" + id + ") " : "") + '______</span>'; });
     return '<article class="wq"><div class="wq-top"><span class="q-num">Q' + q.num + '</span><span class="label">' + esc(qGroup(q)) + '</span><span class="sp"></span>' +
-      '<button class="toggle" data-retryq="' + QUESTIONS.indexOf(q) + '">Retry</button></div>' +
+      '<span class="btns"><button class="toggle" data-retryq="' + QUESTIONS.indexOf(q) + '">Retry</button>' +
+      '<button class="toggle" data-a="editq" data-i="' + q.num + '">Edit</button>' +
+      '<button class="toggle" data-a="delq" data-i="' + q.num + '">' + (CONF === "q" + q.num ? "Confirm delete" : "Delete") + '</button></span></div>' +
       '<p class="wq-text">' + text + '</p>' +
+      (q.stem && q.passage && !q.pkey ? '<details class="pp"><summary>Passage</summary><p class="passage rc">' + esc(q.passage) + '</p></details>' : "") +
       (q.pkey ? '<details class="pp"><summary>Passage</summary>' + rcPassage(q) + '</details>' : "") +
       '<div class="wq-ans"><div class="wa bad"><span class="label">Your answer</span><span>' + esc(qAns(q, "you")) + '</span></div>' +
       '<div class="wa good"><span class="label">Correct answer</span><span>' + esc(qAns(q, "right")) + '</span></div></div>' +
-      '<p class="wq-why"><b>Why:</b> ' + esc(SIMPLE[q.num] || "") + '</p></article>';
+      '<p class="wq-why"><b>Why:</b> ' + esc(simpleOf(q)) + '</p>' + (q.note ? '<p class="wq-why"><b>My note:</b> ' + esc(q.note) + '</p>' : "") + '</article>';
   }).join("") || '<div class="empty">Nothing here yet.</div>';
 }
 
@@ -892,8 +930,10 @@ function renderGlossary() {
       '<p class="zh">' + hi(e.zh, state.gText) + '</p>' +
       '<p class="eg">' + esc(e.eg) + '</p>' +
       '<div class="rel"><b>syn</b><span>' + esc(e.syn) + '</span><b>ant</b><span>' + esc(e.ant) + '</span></div>' +
-      '<div class="entry-foot"><span class="roles">' + [e].concat(e.also || []).map(function (u) { return '<span class="role ' + u.role + '">' + ROLE_LABEL[u.role] + ' · Q' + u.q + (u.blank ? " (" + u.blank + ")" : "") + '</span>'; }).join("") + '</span>' +
-      '<button class="toggle" data-known="' + w + '" aria-pressed="' + (!!known[w]) + '">' + (known[w] ? "Known ✓" : "Mark known") + '</button></div></article>';
+      '<div class="entry-foot"><span class="roles">' + [e].concat(e.also || []).map(function (u) { return u.q ? '<span class="role ' + u.role + '">' + ROLE_LABEL[u.role] + ' · Q' + u.q + (u.blank ? " (" + u.blank + ")" : "") + '</span>' : '<span class="role ' + u.role + '">' + ROLE_LABEL[u.role] + ' · added by you</span>'; }).join("") + '</span>' +
+      '<span class="btns"><button class="toggle" data-a="editw" data-i="' + esc(w) + '">Edit</button>' +
+      '<button class="toggle" data-a="delw" data-i="' + esc(w) + '">' + (CONF === "w" + w ? "Confirm delete" : "Delete") + '</button>' +
+      '<button class="toggle" data-known="' + w + '" aria-pressed="' + (!!known[w]) + '">' + (known[w] ? "Known ✓" : "Mark known") + '</button></span></div></article>';
   }).join("") + '</div>';
 }
 function renderCards(list) {
@@ -903,7 +943,8 @@ function renderCards(list) {
     ? '<div class="def">' + esc(e.en) + '</div><div class="zh">' + esc(e.zh) + '</div><div class="eg">' + esc(e.eg) + '</div><div class="rel" style="text-align:left"><b>syn</b><span>' + esc(e.syn) + '</span><b>ant</b><span>' + esc(e.ant) + '</span></div>'
     : '<div class="big">' + esc(w) + '</div><div class="label">' + e.pos + ' · tap to reveal</div>';
   $("#g-view").innerHTML = '<div class="deck"><div class="deck-bar"><span class="label">Card ' + (state.card + 1) + ' of ' + list.length + '</span>' +
-    '<button class="toggle" data-known="' + w + '" aria-pressed="' + (!!known[w]) + '">' + (known[w] ? "Known ✓" : "Mark known") + '</button></div>' +
+    '<span class="btns"><button class="toggle" data-a="editw" data-i="' + esc(w) + '">Edit</button>' +
+    '<button class="toggle" data-known="' + w + '" aria-pressed="' + (!!known[w]) + '">' + (known[w] ? "Known ✓" : "Mark known") + '</button></span></div>' +
     '<button class="card" id="flip" aria-label="Flip card">' + face + '</button>' +
     '<div class="deck-bar"><div class="grp"><button class="chip" id="prev">← Prev</button><button class="chip" id="next">Next →</button></div>' +
     '<button class="chip" id="shuf">Shuffle</button></div></div>';
@@ -936,7 +977,7 @@ document.addEventListener("click", function (ev) {
   else if (t.id === "next") { state.card++; state.flipped = false; renderGlossary(); }
   else if (t.id === "prev") { state.card = Math.max(0, state.card - 1); state.flipped = false; renderGlossary(); }
   else if (t.id === "shuf") { state.card = Math.floor(Math.random() * wordList().length); state.flipped = false; renderGlossary(); }
-  else if (t.id === "g-unknown") { state.hideKnown = !state.hideKnown; t.setAttribute("aria-pressed", String(state.hideKnown)); state.card = 0; renderGlossary(); }
+  else if (t.id === "g-unknown") { state.hideKnown = !state.hideKnown; store("gre-prefs", { hideKnown: state.hideKnown }); t.setAttribute("aria-pressed", String(state.hideKnown)); state.card = 0; renderGlossary(); }
   else if (t.id === "m-list" || t.id === "m-cards") {
     state.mode = t.id === "m-list" ? "list" : "cards"; state.flipped = false; state.card = 0;
     $("#m-list").setAttribute("aria-pressed", String(state.mode === "list"));
@@ -989,7 +1030,7 @@ function rtPassage(q) {
 }
 function renderRetry() {
   var el = $("#r-view");
-  if (!QUESTIONS.length) { el.innerHTML = '<div class="empty">No questions to retry yet.</div>'; return; }
+  if (!QUESTIONS.length) { el.innerHTML = '<div class="empty">No questions to retry yet.<br><br><button class="toggle primary" data-a="addq">Add a question</button></div>'; return; }
   if (!RT.order) { rtNew(); }
   var q = rtQ(), n = q.blanks.length;
   var pills = QUESTIONS.map(function (x, i) {
@@ -1022,12 +1063,12 @@ function renderRetry() {
     }).join("");
     foot = '<div class="result ' + (full ? "full" : "part") + '"><b>' + sc + '/' + n + '</b><span>' + (full ? "All correct. Try again with shuffled options to confirm it sticks." : "Not quite. Read the explanation, then try again.") + '</span></div>' +
       (means ? '<div class="means"><span class="label">Meanings of every option</span>' + means + '</div>' : "") +
-      '<div class="why"><span class="label">Explanation</span>' + q.why.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("") + '</div>' +
+      '<div class="why"><span class="label">Explanation</span>' + q.why.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("") + (q.note ? '<p><b>My note:</b> ' + esc(q.note) + '</p>' : "") + '</div>' +
       '<div class="actions"><button class="toggle primary" id="r-again">Try again</button>' + (QUESTIONS.length > 1 ? '<button class="toggle" id="r-next">Next question</button>' : "") + '</div>';
   }
-  el.innerHTML = '<div class="tools" style="margin-bottom:16px">' + pills + '<span style="flex:1"></span><button class="chip" data-rshuf="1" aria-pressed="' + RT.shuffle + '">Shuffle options</button></div>' +
+  el.innerHTML = '<div class="tools" style="margin-bottom:16px">' + pills + '<span style="flex:1"></span><button class="chip" data-a="editq" data-i="' + q.num + '">Edit question</button><button class="chip" data-a="addq">+ Add question</button><button class="chip" data-rshuf="1" aria-pressed="' + RT.shuffle + '">Shuffle options</button></div>' +
     '<article class="q"><div class="q-head"><span class="q-num">Q' + q.num + '</span><span>' + esc(q.type) + '</span><span class="sp"></span><span class="label">' + hist + '</span></div>' +
-    '<div class="q-body">' + (q.pkey ? rcPassage(q) : '<p class="passage">' + rtPassage(q) + '</p>') + (q.stem ? '<p class="stem">' + esc(q.stem) + '</p>' : "") + '<div class="blanks">' + blanks + '</div>' + foot + '</div></article>';
+    '<div class="q-body">' + (q.pkey ? rcPassage(q) : (q.stem ? (q.passage ? '<p class="passage rc">' + esc(q.passage) + '</p>' : "") : '<p class="passage">' + rtPassage(q) + '</p>')) + (q.stem ? '<p class="stem">' + esc(q.stem) + '</p>' : "") + '<div class="blanks">' + blanks + '</div>' + foot + '</div></article>';
 }
 document.addEventListener("click", function (ev) {
   var t = ev.target.closest("button"); if (!t || t.disabled) { return; }
@@ -1049,7 +1090,234 @@ document.addEventListener("click", function (ev) {
   else if (t.dataset.cnav !== undefined) { calNav(+t.dataset.cnav); }
   else if (t.dataset.goday) { calAnchor = new Date(t.dataset.goday + "T00:00:00"); calView = "day"; renderHeader(); }
 });
+/* ---------- manual edits: add, change or delete questions and words (kept in this browser) ---------- */
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+var USER = store("gre-user") || {}; USER.q = USER.q || {}; USER.w = USER.w || {};
+var BASE_Q = clone(QUESTIONS), BASE_W = clone(WORDS);
+var ED = null, CONF = null;
+function saveUser() { store("gre-user", USER); }
+function simpleOf(q) { return q.simple !== undefined ? q.simple : (SIMPLE[q.num] || ""); }
+function rebuildData() {
+  var map = {}, k;
+  BASE_Q.forEach(function (q) { map[q.num] = clone(q); });
+  Object.keys(USER.q).forEach(function (n) { if (USER.q[n] === null) { delete map[n]; } else { map[n] = clone(USER.q[n]); } });
+  QUESTIONS.length = 0;
+  Object.keys(map).map(Number).sort(function (a, b) { return a - b; }).forEach(function (n) { QUESTIONS.push(map[n]); });
+  for (k in WORDS) { delete WORDS[k]; }
+  Object.keys(BASE_W).forEach(function (w) { WORDS[w] = clone(BASE_W[w]); });
+  Object.keys(USER.w).forEach(function (w) { if (USER.w[w] === null) { delete WORDS[w]; } else { WORDS[w] = clone(USER.w[w]); } });
+}
+function refreshAll(focusNum) {
+  rebuildData(); applyPassages();
+  if (focusNum) { QUESTIONS.forEach(function (q, i) { if (q.num === focusNum) { RT.qi = i; } }); }
+  if (RT.qi >= QUESTIONS.length) { RT.qi = Math.max(0, QUESTIONS.length - 1); }
+  rtNew(); renderHeader(); renderWrong(); renderGlossary(); renderRetry();
+  $("#n-retry").textContent = QUESTIONS.length;
+}
+function nextNum() {
+  var m = 0;
+  BASE_Q.forEach(function (q) { m = Math.max(m, q.num); });
+  Object.keys(USER.q).forEach(function (n) { m = Math.max(m, +n); });
+  QUESTIONS.forEach(function (q) { m = Math.max(m, q.num); });
+  return m + 1;
+}
+function kindOf(q) { return q.stem ? "RC" : (q.blanks[0].multi ? "SE" : "TC"); }
+function mkOpts(n) { var a = [], i; for (i = 0; i < n; i++) { a.push({ t: "", you: false, right: false }); } return a; }
+function edNewQ(kind) {
+  return { type: "q", isNew: true, orig: null, num: nextNum(), kind: kind, passage: "", stem: "", pkey: "", note: "", why: "", simple: "", err: "",
+    blanks: [{ id: kind === "TC" ? "i" : "1", title: kind === "RC" ? "Choose one" : "", multi: kind === "SE" ? 2 : 0, opts: mkOpts(kind === "SE" ? 6 : kind === "RC" ? 5 : 3) }] };
+}
+function edFromQ(q) {
+  return { type: "q", isNew: false, orig: q, num: q.num, kind: kindOf(q), passage: q.passage || "", stem: q.stem || "", pkey: q.pkey || "", note: q.note || "",
+    why: (q.why || []).join("\n\n"), simple: simpleOf(q), err: "",
+    blanks: q.blanks.map(function (b) {
+      return { id: b.id, title: b.title || "", multi: b.multi || 0, opts: b.options.map(function (o) { return { t: o[1], you: isIn(b.you, o[0]), right: isIn(b.right, o[0]) }; }) };
+    }) };
+}
+function edNewW() { return { type: "w", isNew: true, key: "", word: "", pos: "", en: "", zh: "", eg: "", syn: "", ant: "", q: "", role: "ctx", blank: "", also: null, err: "" }; }
+function edFromW(k) {
+  var e = WORDS[k];
+  return { type: "w", isNew: false, key: k, word: k, pos: e.pos || "", en: e.en || "", zh: e.zh || "", eg: e.eg || "", syn: e.syn || "", ant: e.ant || "", q: e.q || "", role: e.role || "ctx", blank: e.blank || "", also: e.also || null, err: "" };
+}
+function fld(id, label, val, extra) { return '<label>' + label + '<input type="text" id="' + id + '" value="' + esc(val) + '"' + (extra || "") + '></label>'; }
+function area(id, label, val, rows) { return '<label>' + label + '<textarea id="' + id + '" rows="' + (rows || 3) + '">' + esc(val) + '</textarea></label>'; }
+function edQHtml() {
+  var E = ED, single = E.kind !== "SE", L = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", idx = 0;
+  var kinds = [["TC", "Text Completion"], ["SE", "Sentence Equivalence (pick 2)"], ["RC", "Reading Comprehension"]];
+  var h = '<div class="ed-head"><h2>' + (E.isNew ? "Add a wrong question" : "Edit Q" + E.num) + '</h2><button class="chip" data-a="ed-cancel">Close</button></div>';
+  h += '<div class="ed-row"><label>Number<input type="number" id="ed-num" min="1" value="' + E.num + '"' + (E.isNew ? "" : " disabled") + '></label>' +
+    '<label>Type<select id="ed-kind"' + (E.isNew ? "" : " disabled") + '>' + kinds.map(function (k) { return '<option value="' + k[0] + '"' + (k[0] === E.kind ? " selected" : "") + '>' + k[1] + '</option>'; }).join("") + '</select></label></div>';
+  if (E.kind === "RC") {
+    h += area("ed-stem", "Question", E.stem, 2) + fld("ed-pkey", "Passage group (optional: questions on the same passage share a name, e.g. comic)", E.pkey) + area("ed-passage", "Passage text (optional)", E.passage, 4);
+  } else {
+    var ids = E.blanks.map(function (b) { return b.id; });
+    h += area("ed-passage", "Question text", E.passage, 4) +
+      '<div class="actions"><span class="hint">Mark each blank in the text:</span>' + ids.map(function (id) { return '<button class="chip" data-a="ed-ins" data-i="' + esc(id) + '">Insert {' + esc(id) + '}</button>'; }).join("") + '</div>';
+  }
+  E.blanks.forEach(function (bl, bi) {
+    h += '<div class="ed-blank"><div class="ed-head"><span class="label">' + (E.kind === "TC" ? "Blank (" + esc(bl.id) + ")" : E.kind === "SE" ? "Options" : "Answer choices") + '</span>' +
+      (E.kind === "TC" && E.blanks.length > 1 ? '<button class="chip" data-a="ed-delblank" data-b="' + bi + '">Remove blank</button>' : "") + '</div>';
+    bl.opts.forEach(function (o, oi) {
+      var key = bi + ":" + oi, ty = single ? "radio" : "checkbox";
+      h += '<div class="ed-opt"><span class="k">' + L.charAt(idx++) + '</span><input type="text" data-ot="' + key + '" value="' + esc(o.t) + '" placeholder="Option text">' +
+        '<label class="ck"><input type="' + ty + '" name="y' + bi + '" data-oy="' + key + '"' + (o.you ? " checked" : "") + '> yours</label>' +
+        '<label class="ck"><input type="' + ty + '" name="r' + bi + '" data-or="' + key + '"' + (o.right ? " checked" : "") + '> correct</label>' +
+        '<button class="chip" data-a="ed-delopt" data-b="' + bi + '" data-i="' + oi + '" aria-label="Remove option">×</button></div>';
+    });
+    h += '<div class="actions"><button class="chip" data-a="ed-addopt" data-b="' + bi + '">+ Option</button></div></div>';
+  });
+  if (E.kind === "TC" && E.blanks.length < 3) { h += '<div class="actions"><button class="chip" data-a="ed-addblank">+ Add another blank</button></div>'; }
+  h += area("ed-simple", "Simple explanation (one or two sentences)", E.simple, 3) +
+    area("ed-why", "Detailed explanation (separate paragraphs with a blank line)", E.why, 5) +
+    area("ed-note", "My note (optional)", E.note, 2);
+  h += (E.err ? '<div class="ed-err" role="alert">' + esc(E.err) + '</div>' : "") +
+    '<div class="actions"><button class="toggle primary" data-a="ed-save">Save</button><button class="toggle" data-a="ed-cancel">Cancel</button>' +
+    (!E.isNew && USER.q[E.num] !== undefined && BASE_Q.some(function (q) { return q.num === E.num; }) ? '<button class="toggle" data-a="ed-reset">Reset to original</button>' : "") + '</div>';
+  return h;
+}
+function edWHtml() {
+  var E = ED, roles = [["answer", "Correct answer"], ["trap", "Wrong choice"], ["ctx", "In the passage"]];
+  return '<div class="ed-head"><h2>' + (E.isNew ? "Add a word or phrase" : "Edit " + esc(E.key)) + '</h2><button class="chip" data-a="ed-cancel">Close</button></div>' +
+    '<div class="ed-row">' + fld("ew-word", "Word or phrase", E.word) + fld("ew-pos", "Part of speech (adj., v., n., phr.)", E.pos) + '</div>' +
+    area("ew-en", "English meaning", E.en, 3) + fld("ew-zh", "Chinese meaning", E.zh) + area("ew-eg", "Example sentence", E.eg, 2) +
+    '<div class="ed-row">' + fld("ew-syn", "Synonyms", E.syn) + fld("ew-ant", "Antonyms", E.ant) + '</div>' +
+    '<div class="ed-row"><label>From question number (optional)<input type="number" id="ew-q" min="0" value="' + esc(E.q) + '"></label>' +
+    '<label>Role<select id="ew-role">' + roles.map(function (r) { return '<option value="' + r[0] + '"' + (r[0] === E.role ? " selected" : "") + '>' + r[1] + '</option>'; }).join("") + '</select></label>' +
+    fld("ew-blank", "Blank (optional, e.g. ii)", E.blank) + '</div>' +
+    (E.err ? '<div class="ed-err" role="alert">' + esc(E.err) + '</div>' : "") +
+    '<div class="actions"><button class="toggle primary" data-a="ed-save">Save</button><button class="toggle" data-a="ed-cancel">Cancel</button>' +
+    (!E.isNew && USER.w[E.key] !== undefined && BASE_W[E.key] ? '<button class="toggle" data-a="ed-reset">Reset to original</button>' : "") + '</div>';
+}
+function edRender() {
+  var box = $("#ed"); if (!ED) { box.hidden = true; box.innerHTML = ""; return; }
+  box.innerHTML = '<div class="ed">' + (ED.type === "q" ? edQHtml() : edWHtml()) + '</div>'; box.hidden = false;
+}
+function edOpen(o) { ED = o; edRender(); $("#ed").scrollTop = 0; }
+function edClose() { ED = null; edRender(); }
+function edSync() {
+  var E = ED; if (!E) { return; }
+  var g = function (id) { var el = document.getElementById(id); return el ? el.value : null; }, v;
+  if (E.type === "q") {
+    if ((v = g("ed-num")) !== null) { E.num = +v || 0; }
+    ["passage", "stem", "pkey", "note", "why", "simple"].forEach(function (f) { var x = g("ed-" + f); if (x !== null) { E[f] = x; } });
+    E.blanks.forEach(function (bl, bi) {
+      bl.opts.forEach(function (o, oi) {
+        var key = bi + ":" + oi, t = document.querySelector('[data-ot="' + key + '"]');
+        if (t) { o.t = t.value; o.you = document.querySelector('[data-oy="' + key + '"]').checked; o.right = document.querySelector('[data-or="' + key + '"]').checked; }
+      });
+    });
+  } else {
+    ["word", "pos", "en", "zh", "eg", "syn", "ant", "q", "role", "blank"].forEach(function (f) { var x = g("ew-" + f); if (x !== null) { E[f] = x; } });
+  }
+}
+function edSaveQ() {
+  edSync();
+  var E = ED, L = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", li = 0, err = "", blanks = [], se = E.kind === "SE";
+  if (!(E.num > 0)) { err = "Give the question a number."; }
+  else if (E.isNew && QUESTIONS.some(function (q) { return q.num === E.num; })) { err = "Q" + E.num + " already exists. Pick another number."; }
+  if (!err && E.kind === "RC" && !E.stem.trim()) { err = "Type the question."; }
+  if (!err && E.kind !== "RC") {
+    if (!E.passage.trim()) { err = "Type the question text."; }
+    else { E.blanks.forEach(function (bl) { if (!err && E.passage.indexOf("{" + bl.id + "}") < 0) { err = "The text needs {" + bl.id + "} where the blank goes. Use the Insert button."; } }); }
+  }
+  if (!err) {
+    E.blanks.forEach(function (bl) {
+      var b = { id: bl.id, options: [], you: se ? [] : "", right: se ? [] : "" };
+      if (bl.title) { b.title = bl.title; }
+      bl.opts.forEach(function (o) {
+        if (!o.t.trim()) { return; }
+        var k = L.charAt(li++); b.options.push([k, o.t.trim()]);
+        if (se) { if (o.you) { b.you.push(k); } if (o.right) { b.right.push(k); } } else { if (o.you) { b.you = k; } if (o.right) { b.right = k; } }
+      });
+      if (se) { b.multi = b.right.length; }
+      if (!err && b.options.length < 2) { err = "Each blank needs at least two options."; }
+      if (!err && (se ? !b.right.length : !b.right)) { err = "Tick the correct answer for every blank."; }
+      blanks.push(b);
+    });
+  }
+  if (err) { E.err = err; edRender(); return; }
+  var q = E.orig ? clone(E.orig) : { section: "Verbal", ref: "", difficulty: "", seconds: null, attempts: null, words: [] };
+  q.num = E.num; q.blanks = blanks; q.passage = E.passage.trim();
+  if (E.kind === "RC") { q.stem = E.stem.trim(); if (E.pkey.trim()) { q.pkey = E.pkey.trim(); } else { delete q.pkey; } }
+  else { delete q.stem; delete q.pkey; }
+  if (!q.pkey) { delete q.sentPick; }
+  q.type = E.kind === "TC" ? "Text Completion · " + blanks.length + " blank" + (blanks.length > 1 ? "s" : "")
+         : se ? "Sentence Equivalence · pick " + blanks[0].multi
+         : (E.orig && E.orig.stem && E.orig.type ? E.orig.type : "Reading Comprehension");
+  q.why = E.why.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+  q.simple = E.simple.trim(); q.note = E.note.trim();
+  USER.q[q.num] = q; saveUser(); edClose(); refreshAll(q.num);
+}
+function edSaveW() {
+  edSync();
+  var E = ED, key = E.word.trim(), err = "";
+  if (!key) { err = "Type the word or phrase."; }
+  else if ((E.isNew || key !== E.key) && WORDS[key]) { err = "\"" + key + "\" is already in the glossary. Edit that entry instead."; }
+  else if (!E.en.trim() && !E.zh.trim()) { err = "Add an English or Chinese meaning."; }
+  if (err) { E.err = err; edRender(); return; }
+  var e = { pos: E.pos.trim(), en: E.en.trim(), zh: E.zh.trim(), eg: E.eg.trim(), syn: E.syn.trim(), ant: E.ant.trim(), q: +E.q || 0, role: E.role };
+  if (E.blank.trim()) { e.blank = E.blank.trim(); }
+  if (E.also) { e.also = E.also; }
+  if (!E.isNew && key !== E.key) { USER.w[E.key] = null; if (known[E.key]) { known[key] = true; delete known[E.key]; store("gre-known", known); } }
+  USER.w[key] = e; saveUser(); edClose(); refreshAll();
+}
+function backupData() { return { kind: "gre-notebook", v: 1, edits: USER, retry: retryLog, events: events, known: known, passages: PASSAGES }; }
+document.addEventListener("click", function (ev) {
+  var t = ev.target.closest("button"); if (!t || !t.dataset.a) { return; }
+  var a = t.dataset.a, i = t.dataset.i, b = +t.dataset.b;
+  if (a !== "delq" && a !== "delw") { CONF = null; }
+  if (a === "addq") { edOpen(edNewQ("TC")); }
+  else if (a === "editq") { var q = QUESTIONS.filter(function (x) { return x.num === +i; })[0]; if (q) { edOpen(edFromQ(q)); } }
+  else if (a === "delq") {
+    if (CONF === "q" + i) { CONF = null; USER.q[i] = null; saveUser(); refreshAll(); } else { CONF = "q" + i; renderWrong(); }
+  }
+  else if (a === "addw") { edOpen(edNewW()); }
+  else if (a === "editw") { if (WORDS[i]) { edOpen(edFromW(i)); } }
+  else if (a === "delw") {
+    if (CONF === "w" + i) { CONF = null; USER.w[i] = null; saveUser(); refreshAll(); } else { CONF = "w" + i; renderGlossary(); }
+  }
+  else if (a === "ed-cancel") { edClose(); }
+  else if (a === "ed-save") { if (ED.type === "q") { edSaveQ(); } else { edSaveW(); } }
+  else if (a === "ed-reset") {
+    if (ED.type === "q") { delete USER.q[ED.num]; } else { delete USER.w[ED.key]; }
+    saveUser(); edClose(); refreshAll();
+  }
+  else if (a === "ed-addblank") { edSync(); if (ED.blanks.length < 3) { ED.blanks.push({ id: ["i", "ii", "iii"][ED.blanks.length], title: "", multi: 0, opts: mkOpts(3) }); } edRender(); }
+  else if (a === "ed-delblank") { edSync(); ED.blanks.splice(b, 1); ED.blanks.forEach(function (x, n) { x.id = ["i", "ii", "iii"][n]; }); edRender(); }
+  else if (a === "ed-addopt") { edSync(); ED.blanks[b].opts.push({ t: "", you: false, right: false }); edRender(); }
+  else if (a === "ed-delopt") { edSync(); if (ED.blanks[b].opts.length > 2) { ED.blanks[b].opts.splice(+i, 1); } edRender(); }
+  else if (a === "ed-ins") {
+    var ta = $("#ed-passage"), s = typeof ta.selectionStart === "number" ? ta.selectionStart : ta.value.length, e2 = typeof ta.selectionEnd === "number" ? ta.selectionEnd : s;
+    ta.value = ta.value.slice(0, s) + "{" + i + "}" + ta.value.slice(e2); ta.focus();
+  }
+  else if (a === "export") {
+    var txt = JSON.stringify(backupData()), box = $("#bk-text"); box.value = txt; box.focus(); box.select();
+    var ok = false; try { navigator.clipboard.writeText(txt); ok = true; } catch (x) { ok = false; }
+    $("#bk-msg").textContent = ok ? "Copied. Paste it into the box on the other device." : "Select all in the box and copy it.";
+  }
+  else if (a === "import") {
+    var d = null; try { d = JSON.parse($("#bk-text").value); } catch (x) { d = null; }
+    if (!d || d.kind !== "gre-notebook") { $("#bk-msg").textContent = "That is not a notebook backup."; return; }
+    USER = d.edits || {}; USER.q = USER.q || {}; USER.w = USER.w || {};
+    retryLog = d.retry || {}; events = d.events || []; known = d.known || {}; PASSAGES = d.passages || {};
+    saveUser(); store("gre-retry", retryLog); store("gre-events", events); store("gre-known", known); store("gre-passages", PASSAGES);
+    refreshAll(); $("#bk-msg").textContent = "Imported.";
+  }
+});
+document.addEventListener("change", function (ev) {
+  if (ev.target.id === "ed-kind" && ED && ED.type === "q" && ED.isNew) {
+    edSync(); var keep = ED, n = edNewQ(ev.target.value);
+    n.num = keep.num; n.passage = keep.passage; n.stem = keep.stem; n.pkey = keep.pkey; n.note = keep.note; n.why = keep.why; n.simple = keep.simple;
+    ED = n; edRender();
+  }
+});
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ED) { edClose(); } });
+
 $("#n-retry").textContent = QUESTIONS.length;
 
-applyPassages(); renderHeader(); renderWrong(); renderGlossary();
+state.hideKnown = !!((store("gre-prefs") || {}).hideKnown); $("#g-unknown").setAttribute("aria-pressed", String(state.hideKnown));
+rebuildData(); applyPassages(); renderHeader(); renderWrong(); renderGlossary(); $("#n-retry").textContent = QUESTIONS.length;
 </script>
+
+</body>
+</html>
