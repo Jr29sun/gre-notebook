@@ -1,0 +1,1055 @@
+<title>GRE Error Notebook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
+<style>
+/* Layout: one narrow reading column; sticky tab bar switches between wrong answers, the glossary and retry practice. */
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --fg: #1b2230;
+  --muted: #5d6677;
+  --line: #d9dde5;
+  --accent: #2f4ea2;
+  --accent-soft: #e3e9f7;
+  --bad: #b4322a;
+  --bad-soft: #fbe7e5;
+  --good: #1d7a4b;
+  --good-soft: #def3e7;
+  --mark: #fff1b8;
+  --font-read: "Literata", Georgia, "Times New Roman", serif;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161f; --surface: #1b212d; --fg: #e5e9f1; --muted: #9aa4b8; --line: #2d3647;
+    --accent: #8ea8ee; --accent-soft: #23304f; --bad: #f0877e; --bad-soft: #3a2220;
+    --good: #6fd3a0; --good-soft: #1b3428; --mark: #4a4120;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161f; --surface: #1b212d; --fg: #e5e9f1; --muted: #9aa4b8; --line: #2d3647;
+  --accent: #8ea8ee; --accent-soft: #23304f; --bad: #f0877e; --bad-soft: #3a2220;
+  --good: #6fd3a0; --good-soft: #1b3428; --mark: #4a4120;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.55;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header h1 { font-family: var(--font-read); font-weight: 600; font-size: 1.7rem; line-height: 1.2; margin: 0 0 6px; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 62ch; }
+.label { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.stats { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.cal-title { font-size: 0.92rem; font-weight: 500; }
+.cal-ctrl { display: flex; flex-wrap: wrap; gap: 8px 14px; justify-content: space-between; align-items: center; }
+.seg, .pager { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.plabel { min-width: 9em; text-align: center; font-family: var(--font-mono); font-size: 0.8rem; }
+.chip:disabled { opacity: 0.4; cursor: not-allowed; }
+.cal-scroll { overflow-x: auto; padding-bottom: 6px; }
+.hm { display: grid; grid-template-columns: 96px repeat(24, 14px); gap: 3px; width: max-content; }
+.hh { height: 14px; font-family: var(--font-mono); font-size: 0.7rem; line-height: 14px; color: var(--muted); white-space: nowrap; }
+.rl { font-family: var(--font-mono); font-size: 0.72rem; line-height: 14px; color: var(--muted); white-space: nowrap; }
+button.rl { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+button.rl:hover { color: var(--accent); }
+.rl.today-l { color: var(--fg); }
+.rl.test { color: var(--accent); font-weight: 500; }
+.hc { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(128, 128, 128, 0.2); padding: 0; display: block; }
+.fut { opacity: 0.45; }
+.test { border-color: var(--accent); }
+.now { box-shadow: 0 0 0 1.5px var(--accent); }
+.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
+button.hc, button.dc, button.mc { cursor: pointer; }
+button.hc:hover, button.dc:hover, button.mc:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dayv { display: grid; grid-template-columns: 48px repeat(6, 42px); gap: 4px; width: max-content; align-items: center; }
+.dc { width: 42px; height: 42px; border-radius: 4px; border: 1px solid rgba(128, 128, 128, 0.2); padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--font-mono); line-height: 1.2; }
+.dc .dh { font-size: 0.64rem; }
+.dc .dn { font-size: 0.85rem; font-weight: 600; min-height: 1em; }
+.monv { display: grid; grid-template-columns: repeat(7, 42px); gap: 4px; width: max-content; }
+.dw { text-align: center; font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); }
+.mc { width: 42px; height: 42px; border-radius: 4px; border: 1px solid rgba(128, 128, 128, 0.2); padding: 0; display: grid; place-items: center; font-family: var(--font-mono); font-size: 0.8rem; }
+.cal-foot { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; align-items: center; }
+.detail { flex: 1 1 260px; min-width: 0; font-size: 0.84rem; color: var(--muted); }
+.legend { display: flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.sw { width: 14px; height: 14px; border-radius: 3px; display: block; border: 1px solid rgba(128, 128, 128, 0.2); }
+.legend span:first-child { margin-right: 4px; }
+.legend span:last-child { margin-left: 4px; }
+
+.notice { background: var(--accent-soft); border-radius: 6px; padding: 10px 14px; font-size: 0.9rem; }
+
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; gap: 4px; background: var(--bg); padding-block: 6px; border-bottom: 1px solid var(--line); }
+.tab { background: none; border: 0; padding: 8px 14px; border-radius: 6px; font-weight: 500; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.tab .n { font-family: var(--font-mono); font-size: 0.78rem; margin-left: 6px; opacity: 0.8; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tools input[type="search"] { flex: 1 1 200px; min-width: 0; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); }
+.chip { border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+:root[data-theme="dark"] .chip[aria-pressed="true"] { color: #12161f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip[aria-pressed="true"] { color: #12161f; } }
+
+.list { display: flex; flex-direction: column; gap: 16px; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.q-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.q-num { font-family: var(--font-mono); font-weight: 500; color: var(--bad); }
+.q-head .sp { flex: 1; }
+.q-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.passage { font-family: var(--font-read); font-size: 1.02rem; line-height: 1.75; margin: 0; max-width: 70ch; }
+.slot { display: inline-block; font-family: var(--font-ui); font-size: 0.82rem; font-weight: 600; padding: 0 8px; border-radius: 4px; border-bottom: 2px solid var(--muted); background: var(--bg); white-space: nowrap; }
+.slot.right { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.slot.wrong { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+
+.blanks { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.blank { border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.blank h4 { margin: 0; padding: 8px 12px; display: flex; justify-content: space-between; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); font-weight: 500; }
+.verdict { font-size: 0.74rem; font-family: var(--font-mono); padding: 1px 8px; border-radius: 999px; }
+.verdict.ok { background: var(--good-soft); color: var(--good); }
+.verdict.no { background: var(--bad-soft); color: var(--bad); }
+.opt { display: flex; gap: 8px; padding: 7px 12px; align-items: baseline; border-top: 1px solid var(--line); }
+.opt:first-of-type { border-top: 0; }
+.opt .k { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.opt .w { flex: 1; min-width: 0; }
+.opt .tag { font-size: 0.72rem; font-family: var(--font-mono); white-space: nowrap; }
+.opt.is-correct { background: var(--good-soft); }
+.opt.is-correct .tag { color: var(--good); }
+.opt.is-yours { background: var(--bad-soft); }
+.opt.is-yours .tag { color: var(--bad); }
+.opt .w button { background: none; border: 0; padding: 0; text-align: left; border-bottom: 1px dotted var(--muted); }
+
+.why { border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; max-width: 70ch; }
+.why p { margin: 4px 0 0; }
+.q-foot { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.q-foot .words { display: flex; flex-wrap: wrap; gap: 6px; }
+.wlink { background: var(--accent-soft); border: 0; padding: 3px 10px; border-radius: 4px; font-size: 0.82rem; color: var(--accent); font-weight: 500; }
+.toggle { background: none; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; }
+.toggle[aria-pressed="true"] { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.q.is-fixed .q-num { color: var(--good); }
+
+.pending { border: 1px dashed var(--line); border-radius: 8px; padding: 14px 16px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.pending b { font-family: var(--font-mono); font-weight: 500; color: var(--bad); }
+
+/* glossary */
+.mode { display: flex; gap: 8px; }
+.gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 14px; }
+.entry { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.entry h3 { margin: 0; font-family: var(--font-read); font-size: 1.3rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.entry h3 small { font-family: var(--font-mono); font-size: 0.76rem; font-weight: 400; color: var(--muted); }
+.entry p { margin: 0; }
+.zh { font-size: 0.92rem; color: var(--muted); }
+.eg { font-family: var(--font-read); font-size: 0.92rem; font-style: italic; }
+.rel { font-size: 0.84rem; color: var(--muted); display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+.rel b { font-family: var(--font-mono); font-weight: 500; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding-top: 2px; }
+.entry-foot { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 6px; }
+.role { font-family: var(--font-mono); font-size: 0.72rem; padding: 1px 8px; border-radius: 999px; }
+.role.answer { background: var(--good-soft); color: var(--good); }
+.role.trap { background: var(--bad-soft); color: var(--bad); }
+.role.ctx { background: var(--accent-soft); color: var(--accent); }
+.entry.known h3, .entry.known .def { opacity: 0.55; }
+
+/* flashcards */
+.deck { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.card { min-height: 240px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 28px 22px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 10px; width: 100%; }
+.card .big { font-family: var(--font-read); font-size: 2rem; font-weight: 600; overflow-wrap: anywhere; }
+.card .def { font-size: 1.05rem; max-width: 46ch; }
+.deck-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.deck-bar .grp { display: flex; gap: 8px; }
+.passage.rc { white-space: pre-wrap; }
+.pp { border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; }
+.pp summary { cursor: pointer; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.pp textarea { display: block; width: 100%; min-height: 140px; margin: 10px 0; padding: 10px 12px; font: inherit; font-family: var(--font-read); line-height: 1.6; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); resize: vertical; }
+.pp .passage, .pp .pp-note { margin-bottom: 10px; }
+.pp-note { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.wlist { display: flex; flex-direction: column; gap: 14px; }
+.wq { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.wq-top { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.wq-top .sp { flex: 1; }
+.wq-text { margin: 0; font-family: var(--font-read); font-size: 1rem; line-height: 1.7; max-width: 70ch; }
+.blankline { font-family: var(--font-ui); font-weight: 600; letter-spacing: 0.08em; color: var(--muted); }
+.wq-ans { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.wa { border-radius: 6px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.wa.bad { background: var(--bad-soft); color: var(--bad); }
+.wa.good { background: var(--good-soft); color: var(--good); }
+.wa .label { color: inherit; opacity: 0.85; }
+.wa span:last-child { font-weight: 600; }
+.wq-why { margin: 0; max-width: 70ch; }
+.roles { display: flex; flex-wrap: wrap; gap: 6px; }
+.stem { margin: 0; font-weight: 500; max-width: 70ch; }
+.empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+mark { background: var(--mark); color: inherit; border-radius: 2px; }
+/* retry */
+.tabs { flex-wrap: wrap; }
+.rbtn { display: flex; width: 100%; gap: 10px; align-items: baseline; text-align: left; background: var(--surface); border: 0; padding: 10px 12px; }
+.rbtn + .rbtn { border-top: 1px solid var(--line); }
+.rbtn .k { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.rbtn:hover:not(:disabled) { background: var(--accent-soft); }
+.rbtn[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); font-weight: 600; }
+.rbtn:disabled { cursor: default; color: inherit; }
+.rbtn.r-right { background: var(--good-soft); box-shadow: inset 3px 0 0 var(--good); }
+.rbtn.r-wrong { background: var(--bad-soft); box-shadow: inset 3px 0 0 var(--bad); }
+.toggle:disabled { opacity: 0.45; cursor: not-allowed; }
+.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .primary { color: #12161f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .primary { color: #12161f; } }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.result { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 10px 14px; border-radius: 6px; }
+.result b { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 500; }
+.result.full { background: var(--good-soft); color: var(--good); }
+.result.part { background: var(--bad-soft); color: var(--bad); }
+.means { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; max-width: 70ch; }
+.means b { font-weight: 600; }
+/* understanding scale: grey = untouched, deeper green = better grasped */
+:root { --lv0: #e8ebf0; --lv1: #9be9a8; --lv2: #40c463; --lv3: #30a14e; --lv4: #216e39; --lvt0: #5d6677; --lvt1: #1b2230; --lvt2: #0d2a17; --lvt3: #ffffff; --lvt4: #ffffff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --lv0: #232b3a; --lv1: #0e4429; --lv2: #006d32; --lv3: #26a641; --lv4: #39d353; --lvt0: #9aa4b8; --lvt1: #c9f3d4; --lvt2: #e5f7ea; --lvt3: #0b2412; --lvt4: #0b2412; }
+}
+:root[data-theme="dark"] { --lv0: #232b3a; --lv1: #0e4429; --lv2: #006d32; --lv3: #26a641; --lv4: #39d353; --lvt0: #9aa4b8; --lvt1: #c9f3d4; --lvt2: #e5f7ea; --lvt3: #0b2412; --lvt4: #0b2412; }
+.l0 { background: var(--lv0); color: var(--lvt0); }
+.l1 { background: var(--lv1); color: var(--lvt1); }
+.l2 { background: var(--lv2); color: var(--lvt2); }
+.l3 { background: var(--lv3); color: var(--lvt3); }
+.l4 { background: var(--lv4); color: var(--lvt4); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="label">GRE practice · 冲分救命题</p>
+    <h1>GRE Error Notebook</h1>
+    <p>What you missed and why, the vocabulary from those questions, and a retry mode to check you really have it.</p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-wrong" aria-selected="true" data-tab="wrong">Wrong answers<span class="n" id="n-wrong"></span></button>
+    <button class="tab" role="tab" id="tab-gloss" aria-selected="false" data-tab="gloss">Glossary<span class="n" id="n-gloss"></span></button>
+    <button class="tab" role="tab" id="tab-retry" aria-selected="false" data-tab="retry">Retry<span class="n" id="n-retry"></span></button>
+  </nav>
+
+  <section id="panel-wrong" role="tabpanel" aria-labelledby="tab-wrong">
+    <div class="tools" id="w-filters" style="margin-bottom:16px"></div>
+    <div class="wlist" id="w-list"></div>
+  </section>
+
+  <section id="panel-gloss" role="tabpanel" aria-labelledby="tab-gloss" hidden>
+    <div class="tools" style="margin-bottom:16px">
+      <input type="search" id="g-search" placeholder="Search words, meanings or Chinese" aria-label="Search glossary">
+      <button class="chip" id="g-unknown" aria-pressed="false">Hide known</button>
+      <div class="mode">
+        <button class="chip" id="m-list" aria-pressed="true">List</button>
+        <button class="chip" id="m-cards" aria-pressed="false">Flashcards</button>
+      </div>
+    </div>
+    <div id="g-view"></div>
+  </section>
+
+  <section id="panel-retry" role="tabpanel" aria-labelledby="tab-retry" hidden>
+    <div id="r-view"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- DATA: add further wrong questions and words here ---------- */
+
+var QUESTIONS = [
+  {
+    num: 1, ref: "冲分救命题 -11627", difficulty: "medium", section: "Verbal", type: "Text Completion · 3 blanks",
+    seconds: 111, attempts: 1,
+    passage: "Even mild criticism of public radio news reporting seems {i}, because the {ii} such programming regularly receives is well deserved: the reporting is {iii}. In recent years, though, it has become clear that, for all its excellence, public radio will continue to lose viewers to its flashy but superficial rivals.",
+    blanks: [
+      { id: "i", options: [["A","sincere"],["B","churlish"],["C","facile"]], you: "A", right: "B" },
+      { id: "ii", options: [["D","approbation"],["E","vitriol"],["F","skepticism"]], you: "F", right: "D" },
+      { id: "iii", options: [["G","famously tendentious"],["H","increasingly meretricious"],["I","consistently perspicacious"]], you: "I", right: "I" }
+    ],
+    why: [
+      "The passage praises public radio news: the reporting is excellent and the praise is \"well deserved.\" So the criticism would come across as ungracious (churlish), the thing it receives is approval (approbation), and the reporting is insightful (perspicacious).",
+      "Your pick for (ii), skepticism, would make \"well deserved\" odd, because nothing in the passage says the programming deserves doubt. Your pick for (i), sincere, does not fit \"seems ___\" after \"even mild criticism\": the sentence needs a word that says the criticism is out of place.",
+      "The last sentence (\"for all its excellence\") confirms the tone. Blank (iii) was already right."
+    ],
+    words: ["churlish","approbation","perspicacious","sincere","skepticism","vitriol","facile","tendentious","meretricious","superficial"]
+  },
+  {
+    num: 2, ref: "", difficulty: "", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 33, attempts: 1,
+    passage: "Because the political situation seriously impeded international communication, French scientific research was at that time uncharacteristically {1}.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","biased"],["B","insular"],["C","competitive"],["D","misleading"],["E","deceptive"],["F","parochial"]], you: ["A"], right: ["B","F"] }
+    ],
+    why: [
+      "The sentence gives a cause and a result. Politics blocked international communication, so French research was cut off from outside work. The blank needs two words that both mean closed-off or narrow in outlook: insular and parochial.",
+      "\"Uncharacteristically\" also tells you French research normally was open, so the blank is the opposite of open. Biased, your pick, says the research was unfair or prejudiced. Nothing in the sentence says that, and it was also only one word when Sentence Equivalence needs two that give the same meaning.",
+      "Watch the trap pair: misleading and deceptive are near-synonyms, so they look like the matching pair. But losing contact with other countries does not make research deceptive. Competitive is about rivalry, which the sentence never mentions."
+    ],
+    words: ["insular","parochial","biased","competitive","misleading","deceptive","uncharacteristically"]
+  },
+  {
+    num: 3, ref: "22% avg correct", difficulty: "difficulty 3", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 9, attempts: null,
+    passage: "The writer's expression of {1} sentiments in fluid, vigorous prose is a strange blending of the high and the low—like an opera performed by sloppily dressed, unkempt musicians.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","patriotic"],["B","vile"],["C","noble"],["D","base"],["E","tender"],["F","lofty"]], you: ["B","C"], right: ["B","D"] }
+    ],
+    why: [
+      "The key phrase is \"a strange blending of the high and the low.\" The prose is fluid and vigorous, which is the high part, so the sentiments it carries must be the low part. Both vile and base mean morally low, so they give the same sentence meaning.",
+      "The opera comparison repeats the pattern: opera is a high art form, but here it is performed by sloppily dressed, unkempt musicians. A polished form carrying low content is what the writer calls strange.",
+      "Noble and lofty are a synonym pair, which makes them a tempting trap, but they would make the whole sentence high with no blend at all. You kept one right answer (vile) but paired it with noble, which means the opposite of base. Patriotic and tender have no low meaning here, so they cannot create the contrast."
+    ],
+    words: ["vile","base","noble","lofty","patriotic","tender","vigorous","prose","sloppily","unkempt","sentiment"]
+  },
+  {
+    num: 4, ref: "", difficulty: "", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 38, attempts: null,
+    passage: "Ancient coins displayed in museums are almost by definition {1}, on display precisely because they are the most beautiful, the most elaborate, and the best-preserved samples.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","diverse"],["B","atypical"],["C","precious"],["D","exceptional"],["E","disparate"],["F","enigmatic"]], you: ["C","D","F"], right: ["B","D"] }
+    ],
+    why: [
+      "The coins are on display because they are the most beautiful, elaborate and best preserved. That makes them stand out from ordinary ancient coins, so they are not representative of the whole. The two words for that are atypical and exceptional.",
+      "Exceptional was right, but precious and enigmatic do not follow from the reasons given. Beauty and good preservation say nothing about the coins being mysterious, and valuable is not the same as unrepresentative. Also remember Sentence Equivalence needs exactly two answers, and three boxes are marked in your screenshot.",
+      "Diverse and disparate are a synonym pair (varied), so they look like the matching pair. But the sentence compares the displayed coins with other coins, not the variety inside the display."
+    ],
+    words: ["atypical","exceptional","precious","enigmatic","diverse","disparate","elaborate"]
+  },
+  {
+    num: 5, ref: "", difficulty: "", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 3, attempts: null,
+    passage: "Faced with so much conflicting information on the internet, many people come to believe that all sources are so {1} that efforts to discriminate between the true and the false are inevitably futile.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","slanted"],["B","imprecise"],["C","splenetic"],["D","tendentious"],["E","surreptitious"],["F","acrimonious"]], you: ["B","D"], right: ["A","D"] }
+    ],
+    why: [
+      "People conclude that every source pushes its own line, so trying to separate true from false is pointless. The blank needs two words meaning biased toward a viewpoint: slanted and tendentious.",
+      "Imprecise only means not exact. A source can be imprecise and still be fair, so it does not explain why nobody can tell true from false. You kept tendentious right but paired it with imprecise instead of slanted.",
+      "Splenetic (bad-tempered), surreptitious (secret) and acrimonious (bitter) describe tone or secrecy, not bias in how information is presented."
+    ],
+    words: ["slanted","imprecise","splenetic","tendentious","surreptitious","acrimonious","futile","discriminate"]
+  },
+  {
+    num: 6, ref: "Reading Comprehension", difficulty: "", section: "Verbal", type: "Reading Comprehension · inference",
+    seconds: 9, attempts: null,
+    passage: "",
+    pkey: "comic",
+    stem: "The passage suggests that great comic art can be characterized as optimistic about the ability of humans to",
+    blanks: [
+      { id: "1", title: "Choose one", options: [["A","rid themselves of pride"],["B","transcend the human condition"],["C","differentiate clearly between good and evil"],["D","avoid social conflicts"],["E","act rationally"]], you: "C", right: "E" }
+    ],
+    why: [
+      "The passage ends by saying comic art builds courage in reason and trust in what humans can do as humans, and it describes an audience willing to accept the risks of acting rationally. So the ability it is optimistic about is acting rationally (E).",
+      "Your pick (C) says comic art can tell good from evil clearly. The passage says the opposite: it refuses to label whatever differs from the good as evil, and it keeps ambiguity in view.",
+      "(B) and (D) are also reversed. Comic art finds its transcendence inside social life, not beyond the human condition, and it highlights social contradictions instead of avoiding conflict. (A) pride is never discussed."
+    ],
+    words: ["comic","otherworldly","mystify","branding","truth may bear all lights","accentuate","gloss over","extrasocial","transcendence","born out of the conviction","compassionate","invoking"]
+  },
+  {
+    num: 7, ref: "Reading Comprehension", difficulty: "", section: "Verbal", type: "Reading Comprehension · inference",
+    seconds: 65, attempts: null,
+    passage: "",
+    pkey: "comic",
+    stem: "It can be inferred from the passage that the author admires great comic artists primarily for their",
+    blanks: [
+      { id: "1", title: "Choose one", options: [["A","ability to understand the frequently subtle differences between good and evil"],["B","ability to reconcile the contradictions in human behavior"],["C","ability to distinguish between rational and irrational behavior"],["D","insistence on confronting the truth about the human condition"],["E","insistence on condemning human faults and weaknesses"]], you: "B", right: "D" }
+    ],
+    why: [
+      "The passage says comic artists let truth bear all lights and bring out the contradictions in social action instead of glossing over them. So the author admires them for facing the truth about the human condition openly (D).",
+      "Your pick (B) says they reconcile the contradictions. But the passage says they accentuate contradictions and do not gloss over or transcend them, so they do not resolve them.",
+      "(A) is off because comic artists refuse to draw neat lines between good and evil. (C) is never the focus. (E) is the opposite of the compassionate attitude described: they do not condemn, they accept human risks with compassion."
+    ],
+    words: ["reconcile","confront","condemn","subtle"]
+  },
+  {
+    num: 8, ref: "Reading Comprehension", difficulty: "", section: "Verbal", type: "Reading Comprehension · select the sentence",
+    seconds: null, attempts: null,
+    passage: "",
+    pkey: "comic", sentPick: "arouses courage in reason",
+    stem: "Which sentence suggests that great comic art can be characterized as optimistic about the ability of humans to act rationally?",
+    blanks: [
+      { id: "1", title: "Choose the sentence", options: [["A","Sentence 1"],["B","Sentence 2"],["C","Sentence 3"],["D","Sentence 4 (the 'comic community' sentence)"],["E","Sentence 5 (the last sentence)"]], you: "D", right: "E" }
+    ],
+    why: [
+      "The question asks for optimism about the ability of humans to act rationally, so look for words of confidence and trust in human reason. The last sentence has them: comic art arouses courage in reason, and that courage grows out of trust in what humans can do as humans.",
+      "Your pick, the comic-community sentence, only describes the audience as people who are willing to accept the human risks of acting rationally. Willing and risks describe what the audience is like and what it costs. They do not say the author trusts human ability, which is what optimism needs.",
+      "The other sentences are about what comic art avoids (otherworldly claims, hiding contradictions) and about transcendence being a social moment, not about confidence in rational action."
+    ],
+    words: []
+  },
+  {
+    num: 9, ref: "", difficulty: "", section: "Verbal", type: "Text Completion · 2 blanks",
+    seconds: 78, attempts: 1,
+    passage: "The diseases the research was pursuing were particularly feared, having in such a degree the scary property of being both {i} and common that they could seem at once random and nearly {ii}.",
+    blanks: [
+      { id: "i", options: [["A","inexplicable"],["B","containable"],["C","widespread"]], you: "C", right: "A" },
+      { id: "ii", options: [["D","propitious"],["E","inevitable"],["F","detrimental"]], you: "F", right: "E" }
+    ],
+    why: [
+      "The sentence lists two scary properties, and each one is explained by the words after it. Being inexplicable and common makes the diseases seem random (no explanation) and nearly inevitable (so common that nobody escapes them).",
+      "Your pick for (i), widespread, repeats \"common\", so it adds nothing and does not explain \"random\". Containable would make the diseases less scary, the opposite of the point.",
+      "Your pick for (ii), detrimental, only says the diseases are harmful. That is obvious and does not follow from \"random\" and \"common\". Propitious means favorable, the wrong direction."
+    ],
+    words: ["inexplicable","inevitable","containable","widespread","propitious","detrimental"]
+  },
+  {
+    num: 10, ref: "", difficulty: "", section: "Verbal", type: "Text Completion · 2 blanks",
+    seconds: 70, attempts: 1,
+    passage: "Though now the concept of empire is often viewed negatively, prior to the mid-nineteenth century, the word was more {i}. It was widely seen as {ii} term in that it described nothing more than the exercise of government and was largely synonymous with the state.",
+    blanks: [
+      { id: "i", options: [["A","esoteric"],["B","anodyne"],["C","tendentious"]], you: "A", right: "B" },
+      { id: "ii", options: [["D","a derogatory"],["E","a functional"],["F","an anomalous"]], you: "E", right: "E" }
+    ],
+    why: [
+      "\"Though now ... viewed negatively\" sets up a contrast: earlier the word was not negative. The second sentence says it described nothing more than the exercise of government, so it was neutral and inoffensive (anodyne), a plain functional term.",
+      "Your pick for (i), esoteric, means understood by only a few people. The passage says the word was widely used and understood, so that does not fit. Tendentious would mean biased, which is again the opposite of neutral.",
+      "Blank (ii) was already right: functional means it just did a job (naming government). Derogatory repeats the negative view the sentence contrasts with, and anomalous (unusual) has no support."
+    ],
+    words: ["anodyne","esoteric","tendentious","derogatory","anomalous"]
+  },
+  {
+    num: 11, ref: "", difficulty: "", section: "Verbal", type: "Text Completion · 3 blanks",
+    seconds: 325, attempts: 1,
+    passage: "Smell is often said to be our most {i} sense, but I am not sure that the evidence really supports that conclusion. Certainly it is {ii} to suggest that primeval organisms learned to discern nice and noxious chemicals before they learned to detect light and sound. Yet there is good evidence to suggest that the smell system we have now is actually {iii} than our visual system and possibly our hearing system as well.",
+    blanks: [
+      { id: "i", options: [["A","misunderstood"],["B","underutilized"],["C","ancient"]], you: "C", right: "C" },
+      { id: "ii", options: [["D","reasonable"],["E","credulous"],["F","optimistic"]], you: "D", right: "D" },
+      { id: "iii", options: [["G","somewhat less reliable"],["H","more recent in origin"],["I","more functionally adaptive"]], you: "G", right: "H" }
+    ],
+    why: [
+      "The whole passage is about age. Smell is said to be our most ancient sense (i), and it is reasonable to think primeval organisms smelled before they saw (ii). \"Yet\" then turns the argument: the smell system we have now is actually more recent in origin than vision (iii), which goes against the claim that it is the oldest.",
+      "Your pick for (iii), somewhat less reliable, is a new topic. Reliability is never discussed anywhere in the passage, and it does not answer the ancient-or-not question. More functionally adaptive is also about usefulness, not age.",
+      "Blanks (i) and (ii) were already right."
+    ],
+    words: ["ancient","credulous","primeval","noxious","discern","more recent in origin"]
+  },
+  {
+    num: 12, ref: "", difficulty: "", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 131, attempts: 1,
+    passage: "Although traditionally artists have rightly been seen as the most {1} audience for the work of their colleagues, today taste is also created by critics and curators and occasionally by collectors.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","arbitrary"],["B","volatile"],["C","perceptive"],["D","impulsive"],["E","subjective"],["F","discerning"]], you: ["C","E"], right: ["C","F"] }
+    ],
+    why: [
+      "\"Rightly\" tells you artists were praised as an audience. The praise is that they judge art well, so the blank needs two words for sharp judgment: perceptive and discerning.",
+      "You got perceptive right, but subjective means based on personal feeling. That is not praise and it is not a synonym of perceptive.",
+      "Arbitrary, volatile and impulsive all describe judgment that is random or changeable, which is the opposite of \"rightly\" praised."
+    ],
+    words: ["perceptive","discerning","subjective","arbitrary","volatile","impulsive"]
+  },
+  {
+    num: 13, ref: "", difficulty: "", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 15, attempts: 1,
+    passage: "As the global climate warms, some deserts, expanding to higher latitudes, are beginning to {1} fertile regions.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","augment"],["B","endanger"],["C","destroy"],["D","displace"],["E","supplant"],["F","enrich"]], you: ["B","D"], right: ["D","E"] }
+    ],
+    why: [
+      "Deserts expanding into fertile land take its place. Displace and supplant both mean to replace or take the place of, so they give the same sentence meaning.",
+      "You got displace right, but endanger only says fertile regions are put at risk. It does not say the desert takes over, and no other option means the same as endanger. Destroy is close in feel but means ruin, not replace.",
+      "Augment and enrich are a synonym pair (add to, improve), which is a trap, because deserts cannot make fertile land richer."
+    ],
+    words: ["displace","supplant","augment","endanger"]
+  },
+  {
+    num: 14, ref: "", difficulty: "", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 328, attempts: 1,
+    passage: "Upon realizing that the indicators of a stressful situation can be extremely {1}, the psychologist reconsidered her claim that a reliable way of reducing stress is to recognize stressful situations and then avoid them.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","acute"],["B","exiguous"],["C","persistent"],["D","overstated"],["E","tenuous"],["F","unrelenting"]], you: ["C","E"], right: ["B","E"] }
+    ],
+    why: [
+      "She doubted that you can avoid stress by spotting stressful situations. That only makes sense if the signs are hard to spot, meaning very small or faint. Exiguous (scanty) and tenuous (slight, weak) both mean that.",
+      "You got tenuous right, but persistent means lasting or constant, which would make the signs easy to notice. Unrelenting is its synonym, so persistent and unrelenting are a trap pair.",
+      "Acute (sharp, intense) would also make the signs easy to see. Overstated is about exaggeration, not how noticeable something is."
+    ],
+    words: ["exiguous","tenuous","acute","persistent","unrelenting"]
+  },
+  {
+    num: 15, ref: "", difficulty: "", section: "Verbal", type: "Sentence Equivalence · pick 2",
+    seconds: 22, attempts: 1,
+    passage: "Before 1917, the Russian workforce had been one of the most politically active and vociferous in the world, under the Soviets this {1} disappeared.",
+    blanks: [
+      { id: "1", multi: 2, options: [["A","skepticism"],["B","bravado"],["C","diffidence"],["D","truculence"],["E","belligerence"],["F","incredulity"]], you: ["E","F"], right: ["D","E"] }
+    ],
+    why: [
+      "Vociferous means loudly outspoken, so the workers had an aggressive, combative spirit. Under the Soviets that disappeared. Truculence and belligerence both mean eager to fight or defy.",
+      "You got belligerence right, but incredulity means disbelief. Nothing about disbelief is described in the first half of the sentence. Skepticism is its synonym, another trap pair.",
+      "Bravado (showy boldness) is close in feel but means false courage, not real aggression. Diffidence (shyness) is the opposite of vociferous."
+    ],
+    words: ["truculence","belligerence","incredulity","skepticism","bravado","diffidence","vociferous"]
+  },
+  {
+    num: 16, ref: "", difficulty: "", section: "Verbal", type: "Text Completion · 2 blanks",
+    seconds: 73, attempts: 1,
+    passage: "Prose {i} the notion that, as a patron of the arts, Peggy Guggenheim was {ii}; Guggenheim, Prose argues, simply had limited funds to bestow on the many artists and writers who depended on her.",
+    blanks: [
+      { id: "i", options: [["A","disputes"],["B","accepts"],["C","exploits"]], you: "A", right: "A" },
+      { id: "ii", options: [["D","elitist"],["E","self-aggrandizing"],["F","parsimonious"]], you: "D", right: "F" }
+    ],
+    why: [
+      "The part after the semicolon is Prose's defence: Guggenheim simply had limited funds. So Prose rejects (disputes) the idea that she was stingy (parsimonious). She gave less because she had less, not because she did not want to give.",
+      "Your pick for (ii), elitist, means favoring a select few. Limited funds does not answer that charge, so it does not fit the defence. Self-aggrandizing (boasting) does not fit either, since the sentence is about how much she gave.",
+      "Blank (i) was already right."
+    ],
+    words: ["parsimonious","disputes","elitist","self-aggrandizing","bestow","patron"]
+  },
+  {
+    num: 17, ref: "", difficulty: "", section: "Verbal", type: "Text Completion · 3 blanks",
+    seconds: 78, attempts: 1,
+    passage: "Some scholars have interpreted marks incised on pottery during the Neolithic period, some nearly 6,000 years old, as the {i} of writing. But while the marks do appear to have been meaningful symbols, and while the use of symbols is {ii} writing, there is {iii} that the pottery symbols evolved into a true script.",
+    blanks: [
+      { id: "i", options: [["A","posterity"],["B","forerunner"],["C","elaboration"]], you: "B", right: "B" },
+      { id: "ii", options: [["D","sufficient for"],["E","a prerequisite for"],["F","distinct from"]], you: "E", right: "E" },
+      { id: "iii", options: [["G","little serious doubt"],["H","continuing strong belief"],["I","no firm evidence"]], you: "G", right: "I" }
+    ],
+    why: [
+      "\"But\" turns the sentence. The first part grants things in favor of the scholars (the marks were meaningful symbols, and symbols are a prerequisite for writing). Then \"But\" says the evidence stops short: there is no firm evidence that these symbols became a true script.",
+      "Your pick for (iii), little serious doubt, would agree with the scholars, so it continues the earlier clauses instead of contrasting with them. The \"But ... while ... while ... there is\" pattern asks for the limit on the claim.",
+      "Blanks (i) and (ii) were already right. Symbols are needed for writing, but needed is not the same as enough, which is why sufficient for is wrong."
+    ],
+    words: ["forerunner","prerequisite","no firm evidence","incised","posterity","elaboration"]
+  }
+];
+
+var WORDS = {
+  churlish:      { pos: "adj.", en: "Rude, surly, and lacking in graciousness.", zh: "粗鲁的；无礼的；脾气坏的", eg: "It would be churlish to refuse such a generous offer.", syn: "boorish, surly, ungracious", ant: "gracious, courteous", q: 1, role: "answer", blank: "i" },
+  approbation:   { pos: "n.", en: "Approval or praise, often official or formal.", zh: "赞许；认可；嘉奖", eg: "The proposal won the approbation of the whole committee.", syn: "approval, acclaim, commendation", ant: "censure, disapproval", q: 1, role: "answer", blank: "ii" },
+  perspicacious: { pos: "adj.", en: "Having keen insight; quick to see through things.", zh: "敏锐的；有洞察力的", eg: "A perspicacious editor, she spotted the flaw in the argument at once.", syn: "astute, discerning, shrewd", ant: "obtuse, undiscerning", q: 1, role: "answer", blank: "iii" },
+  sincere:       { pos: "adj.", en: "Genuine and honest; free from pretense.", zh: "真诚的；诚挚的", eg: "She offered a sincere apology.", syn: "genuine, earnest, candid", ant: "insincere, feigned", q: 1, role: "trap", blank: "i" },
+  skepticism:    { pos: "n.", en: "An attitude of doubt toward claims that are not proven.", zh: "怀疑态度；怀疑论", eg: "Scientists greeted the result with skepticism until it was replicated.", syn: "doubt, incredulity, misgiving", ant: "credulity, faith", q: 1, role: "trap", blank: "ii", also: [{ q: 15, role: "trap" }] },
+  vitriol:       { pos: "n.", en: "Bitter, harsh, cruel criticism or feeling.", zh: "尖刻的批评；恶毒的言辞", eg: "The review was full of vitriol for the director.", syn: "invective, acrimony, venom", ant: "praise, flattery", q: 1, role: "trap", blank: "ii" },
+  facile:        { pos: "adj.", en: "In GRE use: too easy and shallow; glib, oversimplified. Also: easily done, fluent.", zh: "肤浅的；轻率的；（也指）流畅的", eg: "A facile explanation ignores the real causes of the crisis.", syn: "glib, superficial, simplistic", ant: "profound, thorough", q: 1, role: "trap", blank: "i" },
+  tendentious:   { pos: "adj.", en: "Promoting a particular, usually biased, point of view.", zh: "有倾向性的；带偏见的", eg: "The documentary was a tendentious account that left out key facts.", syn: "partisan, biased, slanted", ant: "impartial, objective", q: 5, role: "answer", also: [{ q: 1, role: "trap", blank: "iii" }, { q: 10, role: "trap", blank: "i" }] },
+  meretricious:  { pos: "adj.", en: "Attractive on the surface but false or without real value; showy.", zh: "华而不实的；俗艳的", eg: "The film's meretricious glamour hid a thin plot.", syn: "tawdry, gaudy, specious", ant: "authentic, genuine", q: 1, role: "trap", blank: "iii" },
+  superficial:   { pos: "adj.", en: "Concerned only with the surface; lacking depth.", zh: "表面的；肤浅的", eg: "Their friendship was superficial and never survived the move.", syn: "shallow, cursory, skin-deep", ant: "profound, thorough", q: 1, role: "ctx" },
+  insular:       { pos: "adj.", en: "Isolated from other people or ideas; narrow-minded about anything outside one's own group.", zh: "孤立的；偏狭的；与外界隔绝的", eg: "The insular village distrusted every outsider.", syn: "isolated, parochial, narrow-minded", ant: "cosmopolitan, worldly", q: 2, role: "answer" },
+  parochial:     { pos: "adj.", en: "Limited in outlook or scope; concerned only with a small, local area.", zh: "狭隘的；眼界窄的；地方性的", eg: "Her parochial views kept her from appreciating other cultures.", syn: "provincial, insular, narrow", ant: "cosmopolitan, broad-minded", q: 2, role: "answer" },
+  biased:        { pos: "adj.", en: "Unfairly prejudiced for or against someone or something.", zh: "有偏见的；偏向一方的", eg: "The judge was accused of being biased against the defendant.", syn: "prejudiced, partial, one-sided", ant: "impartial, objective", q: 2, role: "trap" },
+  competitive:   { pos: "adj.", en: "Eager to win or to outdo others; involving rivalry.", zh: "竞争的；好胜的", eg: "The firm operates in a highly competitive market.", syn: "ambitious, cutthroat, rival", ant: "cooperative, uncompetitive", q: 2, role: "trap" },
+  misleading:    { pos: "adj.", en: "Giving a wrong idea or impression, whether on purpose or not.", zh: "误导的；令人误解的", eg: "The advertisement was misleading about the true price.", syn: "deceptive, confusing, false", ant: "accurate, clear", q: 2, role: "trap" },
+  uncharacteristically: { pos: "adv.", en: "In a way that is not typical of someone or something; out of character. In Q2 it signals that the blank means the opposite of what is normal for French research.", zh: "反常地；不同寻常地；与一贯特点不符地", eg: "Uncharacteristically, she arrived late to the meeting.", syn: "atypically, unusually, abnormally", ant: "characteristically, typically", q: 2, role: "ctx" },
+  vile:          { pos: "adj.", en: "Extremely unpleasant or morally low; wicked.", zh: "卑鄙的；邪恶的；极讨厌的", eg: "He was punished for his vile treatment of the prisoners.", syn: "foul, wicked, despicable", ant: "noble, admirable", q: 3, role: "answer" },
+  base:          { pos: "adj.", en: "Lacking moral principles; low, ignoble.", zh: "卑劣的；低下的；无价值的", eg: "He was driven by base motives such as greed.", syn: "ignoble, mean, contemptible", ant: "noble, virtuous", q: 3, role: "answer" },
+  noble:         { pos: "adj.", en: "Having or showing high moral qualities; also of high rank.", zh: "高尚的；崇高的；贵族的", eg: "She made the noble decision to give up her seat.", syn: "virtuous, honorable, lofty", ant: "base, ignoble", q: 3, role: "trap" },
+  lofty:         { pos: "adj.", en: "Elevated in style, tone or aims; also very tall, or haughty.", zh: "崇高的；高傲的；高耸的", eg: "He spoke of lofty ideals but acted selfishly.", syn: "elevated, exalted, noble", ant: "lowly, base", q: 3, role: "trap" },
+  patriotic:     { pos: "adj.", en: "Devoted to and supportive of one's country.", zh: "爱国的", eg: "The crowd sang patriotic songs at the parade.", syn: "nationalistic, loyal", ant: "unpatriotic, disloyal", q: 3, role: "trap" },
+  tender:        { pos: "adj.", en: "Gentle, loving or soft; also painful when touched.", zh: "温柔的；柔软的；触痛的", eg: "She gave the child a tender kiss.", syn: "gentle, affectionate, soft", ant: "harsh, callous", q: 3, role: "trap" },
+  vigorous:      { pos: "adj.", en: "Strong, energetic and forceful.", zh: "精力充沛的；强有力的", eg: "She mounted a vigorous defense of her theory.", syn: "energetic, robust, forceful", ant: "feeble, listless", q: 3, role: "ctx" },
+  prose:         { pos: "n.", en: "Ordinary written or spoken language without the line structure of poetry.", zh: "散文；（相对于诗歌的）散文体", eg: "His prose is clear and unadorned.", syn: "writing, narrative", ant: "verse, poetry", q: 3, role: "ctx" },
+  sloppily:      { pos: "adv.", en: "In a careless, untidy or slovenly way.", zh: "邋遢地；草率地；马虎地", eg: "The report was sloppily written and full of errors.", syn: "carelessly, messily, slovenly", ant: "neatly, meticulously", q: 3, role: "ctx" },
+  unkempt:       { pos: "adj.", en: "Untidy or disheveled; neglected in appearance.", zh: "不整洁的；蓬乱的", eg: "The unkempt garden had not been touched in years.", syn: "disheveled, scruffy, slovenly", ant: "neat, tidy, groomed", q: 3, role: "ctx" },
+  sentiment:     { pos: "n.", en: "A feeling or attitude, or an opinion based on feeling.", zh: "情感；情绪；观点", eg: "Public sentiment turned against the new tax.", syn: "feeling, emotion, view", ant: "indifference", q: 3, role: "ctx" },
+  atypical:      { pos: "adj.", en: "Not typical or representative of its kind; unusual.", zh: "非典型的；不具代表性的；异常的", eg: "A high fever is atypical for this mild illness.", syn: "unrepresentative, unusual, anomalous", ant: "typical, characteristic", q: 4, role: "answer" },
+  exceptional:   { pos: "adj.", en: "Unusually good; also unusual or out of the ordinary.", zh: "杰出的；例外的；异常的", eg: "She showed exceptional talent from an early age.", syn: "outstanding, extraordinary, rare", ant: "ordinary, typical", q: 4, role: "answer" },
+  precious:      { pos: "adj.", en: "Of great value or highly cherished; also overly refined or affected.", zh: "珍贵的；宝贵的；矫揉造作的", eg: "The museum guards its precious collection of manuscripts.", syn: "valuable, treasured, costly", ant: "worthless, cheap", q: 4, role: "trap" },
+  enigmatic:     { pos: "adj.", en: "Mysterious and difficult to understand.", zh: "神秘的；难以理解的", eg: "The painting's enigmatic smile has puzzled viewers for centuries.", syn: "mysterious, cryptic, inscrutable", ant: "clear, straightforward", q: 4, role: "trap" },
+  diverse:       { pos: "adj.", en: "Showing a great deal of variety; made up of different kinds.", zh: "多样的；不同的", eg: "The city has a diverse population.", syn: "varied, assorted, miscellaneous", ant: "uniform, homogeneous", q: 4, role: "trap" },
+  disparate:     { pos: "adj.", en: "Essentially different in kind; not able to be compared.", zh: "截然不同的；迥异的", eg: "The report combines disparate sources of data.", syn: "dissimilar, divergent, distinct", ant: "similar, alike", q: 4, role: "trap" },
+  elaborate:     { pos: "adj.", en: "Detailed, complicated and carefully worked out. As a verb: to explain in more detail.", zh: "精心制作的；详尽的；复杂的", eg: "The palace was decorated with elaborate carvings.", syn: "intricate, ornate, detailed", ant: "simple, plain", q: 4, role: "ctx" },
+  slanted:       { pos: "adj.", en: "Presented in a biased way that favors one point of view.", zh: "有倾向性的；带偏见的；倾斜的", eg: "The newspaper gave a slanted account of the strike.", syn: "biased, partial, skewed", ant: "impartial, objective", q: 5, role: "answer" },
+  imprecise:     { pos: "adj.", en: "Not exact or accurate; vague.", zh: "不精确的；含糊的", eg: "His imprecise instructions left everyone confused.", syn: "inexact, vague, loose", ant: "precise, exact", q: 5, role: "trap" },
+  splenetic:     { pos: "adj.", en: "Bad-tempered, irritable or spiteful.", zh: "脾气坏的；易怒的；怨恨的", eg: "The splenetic critic attacked every performance.", syn: "irascible, peevish, testy", ant: "good-natured, genial", q: 5, role: "trap" },
+  surreptitious: { pos: "adj.", en: "Done secretly or stealthily, to avoid being noticed.", zh: "秘密的；鬼鬼祟祟的", eg: "She took a surreptitious glance at her phone.", syn: "stealthy, covert, furtive", ant: "open, overt", q: 5, role: "trap" },
+  acrimonious:   { pos: "adj.", en: "Angry and bitter, especially in words or debate.", zh: "激烈而尖刻的；怨恨的", eg: "The meeting ended in an acrimonious dispute.", syn: "bitter, rancorous, caustic", ant: "amicable, cordial", q: 5, role: "trap" },
+  futile:        { pos: "adj.", en: "Pointless because it cannot succeed.", zh: "徒劳的；无效的", eg: "All attempts to stop the flood were futile.", syn: "vain, fruitless, useless", ant: "fruitful, effective", q: 5, role: "ctx" },
+  discriminate:  { pos: "v.", en: "To recognize a difference between things, as in discriminate between true and false. Also: to treat people unfairly.", zh: "区分；辨别；歧视", eg: "A good editor can discriminate between strong and weak arguments.", syn: "distinguish, differentiate, tell apart", ant: "confuse, conflate", q: 5, role: "ctx" },
+  comic:         { pos: "adj.", en: "Relating to comedy; humorous. In the passage, comic art treats human folly and contradiction with understanding instead of appealing to the gods.", zh: "喜剧的；滑稽的", eg: "The play's comic scenes lighten its serious theme.", syn: "humorous, farcical, amusing", ant: "tragic, serious", q: 6, role: "ctx" },
+  otherworldly:  { pos: "adj.", en: "Belonging to a spiritual or imaginary world beyond ordinary life; not concerned with everyday matters.", zh: "超凡脱俗的；非尘世的", eg: "The monk had an otherworldly calm.", syn: "unearthly, spiritual, ethereal", ant: "earthly, worldly, mundane", q: 6, role: "ctx" },
+  mystify:       { pos: "v.", en: "To confuse or bewilder; to make something seem mysterious.", zh: "使迷惑；使神秘化", eg: "Technical jargon only serves to mystify ordinary readers.", syn: "baffle, bewilder, perplex", ant: "enlighten, clarify", q: 6, role: "ctx" },
+  branding:      { pos: "v. (brand)", en: "Labeling someone or something with a bad reputation, as in branding a person a traitor.", zh: "给…打上烙印；把…定性为；污名化", eg: "The press was branding the policy a failure before it began.", syn: "labeling, stigmatizing, denouncing", ant: "excusing, praising", q: 6, role: "ctx" },
+  "truth may bear all lights": { pos: "phr.", en: "Truth can withstand being examined from every angle, so open scrutiny is nothing to fear. Here, bear means to withstand.", zh: "真理经得起各种角度的审视", eg: "Believing that truth may bear all lights, the professor invited every objection.", syn: "can withstand scrutiny, survives close examination", ant: "fears scrutiny", q: 6, role: "ctx" },
+  accentuate:    { pos: "v.", en: "To make more noticeable; to emphasize.", zh: "强调；使突出", eg: "The dark frame accentuates the painting's bright colors.", syn: "emphasize, highlight, underscore", ant: "downplay, minimize", q: 6, role: "ctx" },
+  "gloss over":  { pos: "phr. v.", en: "To treat a fault or difficulty briefly, or hide it by ignoring it.", zh: "掩饰；敷衍带过；粉饰", eg: "The report glosses over the company's losses.", syn: "downplay, whitewash, skate over", ant: "highlight, dwell on", q: 6, role: "ctx" },
+  extrasocial:   { pos: "adj.", en: "Outside or beyond human society; not coming from social life, such as divine or cosmic sources.", zh: "超出社会之外的；非社会性的", eg: "He appealed to extrasocial authority, such as divine law, to justify the rule.", syn: "nonsocial, external", ant: "social, communal", q: 6, role: "ctx" },
+  transcendence: { pos: "n.", en: "Rising above or going beyond ordinary limits; in religion, existence beyond the physical world.", zh: "超越；超凡", eg: "The poem seeks transcendence of everyday grief.", syn: "surpassing, elevation, rising above", ant: "limitation, immanence", q: 6, role: "ctx" },
+  "born out of the conviction": { pos: "phr.", en: "Arising from a firm belief. Born out of means coming from or caused by.", zh: "源于……的信念", eg: "Her patience was born out of the conviction that people can change.", syn: "rooted in belief, arising from faith", ant: "—", q: 6, role: "ctx" },
+  compassionate: { pos: "adj.", en: "Feeling or showing sympathy and concern for the suffering of others.", zh: "有同情心的；富有怜悯心的", eg: "A compassionate nurse sat with the frightened child.", syn: "sympathetic, caring, merciful", ant: "callous, cruel, indifferent", q: 6, role: "ctx" },
+  invoking:      { pos: "v. (invoke)", en: "Calling on a higher power or authority for help; or citing something as justification.", zh: "援引；祈求；唤起", eg: "The senator ended his speech by invoking the nation's founders.", syn: "citing, appealing to, summoning", ant: "disregarding, ignoring", q: 6, role: "ctx" },
+  reconcile:     { pos: "v.", en: "To make two opposing things fit together or agree; also to settle a dispute, or accept an unwelcome fact.", zh: "使和解；使协调一致；使接受", eg: "She struggled to reconcile her career with family life.", syn: "harmonize, square, resolve", ant: "set at odds, estrange", q: 7, role: "trap" },
+  confront:      { pos: "v.", en: "To face and deal with a difficult situation or person openly.", zh: "面对；正视；对抗", eg: "He finally confronted the truth about his failing business.", syn: "face, tackle, challenge", ant: "avoid, evade", q: 7, role: "answer" },
+  condemn:       { pos: "v.", en: "To express strong disapproval of; also to sentence someone to punishment.", zh: "谴责；判刑", eg: "Leaders condemned the attack in the strongest terms.", syn: "denounce, censure, deplore", ant: "praise, commend", q: 7, role: "trap" },
+  subtle:        { pos: "adj.", en: "So delicate or slight that it is hard to notice; also clever and indirect.", zh: "微妙的；难以察觉的；巧妙的", eg: "There is a subtle difference between the two meanings.", syn: "delicate, understated, nuanced", ant: "obvious, blatant", q: 7, role: "trap" },
+  "pushes its own line": { pos: "phr.", en: "To keep promoting a particular viewpoint or agenda, rather than giving a neutral, balanced account. A source that pushes its own line is biased, which is the idea behind slanted and tendentious.", zh: "一味宣扬自己的立场；带着自己的议程发声；不够中立", eg: "Every newspaper seemed to be pushing its own line on the election.", syn: "promotes an agenda, advocates a viewpoint, is partisan", ant: "stays neutral, reports impartially", q: 5, role: "ctx" },
+  "arouses courage in reason": { pos: "phr.", en: "Stirs up the courage to think and act rationally, even when that is risky. Arouse means to awaken or stir up a feeling. In reason means 'when it comes to using reason', so courage in reason is the courage to reason and act on it. In Q6 and Q7 this courage comes from trusting human reason, not from gods or demons.", zh: "唤起人们运用理性的勇气；激发对理性的信心（in reason＝在运用理性这件事上）", eg: "A good teacher arouses courage in reason, so students dare to question their own assumptions.", syn: "inspires rational confidence, stirs up the nerve to reason", ant: "discourages reasoning, breeds fear of thinking", q: 6, role: "ctx" },
+  rid:           { pos: "v.", en: "To free a person or place of something unwanted. Usually used as rid X of Y, or get rid of. In Q6, rid themselves of pride means to get free of pride.", zh: "使摆脱；除去；清除", eg: "She wanted to rid herself of her bad habits.", syn: "free, purge, clear", ant: "burden, saddle", q: 6, role: "trap" },
+  deceptive:     { pos: "adj.", en: "Giving a false impression; tending to deceive.", zh: "欺骗性的；迷惑人的", eg: "The calm surface of the lake was deceptive; strong currents ran below.", syn: "misleading, illusory, fraudulent", ant: "truthful, genuine", q: 2, role: "trap" },
+  inexplicable: { pos: "adj.", en: "Impossible to explain or account for.", zh: "无法解释的；费解的", eg: "The sudden collapse of the bridge remained inexplicable.", syn: "unaccountable, baffling, mysterious", ant: "explicable, understandable", q: 9, role: "answer", blank: "i" },
+  inevitable: { pos: "adj.", en: "Certain to happen; impossible to avoid.", zh: "不可避免的；必然的", eg: "With the economy in decline, job losses seemed inevitable.", syn: "unavoidable, inescapable, certain", ant: "avoidable, preventable", q: 9, role: "answer", blank: "ii" },
+  containable: { pos: "adj.", en: "Able to be kept under control or within limits.", zh: "可控制的；可遏制的", eg: "Doctors said the outbreak was still containable.", syn: "controllable, manageable", ant: "uncontrollable, unmanageable", q: 9, role: "trap", blank: "i" },
+  widespread: { pos: "adj.", en: "Found or happening over a large area or among many people.", zh: "广泛的；普遍的", eg: "Widespread flooding closed roads across the region.", syn: "extensive, prevalent, common", ant: "isolated, rare", q: 9, role: "trap", blank: "i" },
+  propitious: { pos: "adj.", en: "Giving or indicating a good chance of success; favorable.", zh: "吉利的；有利的", eg: "The calm weather was a propitious sign for the voyage.", syn: "favorable, auspicious, promising", ant: "unfavorable, ominous", q: 9, role: "trap", blank: "ii" },
+  detrimental: { pos: "adj.", en: "Causing harm or damage.", zh: "有害的；不利的", eg: "Smoking is detrimental to your health.", syn: "harmful, damaging, injurious", ant: "beneficial, helpful", q: 9, role: "trap", blank: "ii" },
+  anodyne: { pos: "adj.", en: "Not likely to offend or provoke; bland and inoffensive. (As a noun: something that eases pain.)", zh: "不会冒犯人的；平淡无害的（名词：止痛药）", eg: "The politician gave an anodyne answer that avoided any controversy.", syn: "inoffensive, bland, neutral", ant: "provocative, controversial", q: 10, role: "answer", blank: "i" },
+  esoteric: { pos: "adj.", en: "Understood by or meant for only a small group with special knowledge.", zh: "深奥的；只有内行才懂的", eg: "The professor's esoteric lecture lost most of the class.", syn: "obscure, arcane, abstruse", ant: "familiar, widely known", q: 10, role: "trap", blank: "i" },
+  derogatory: { pos: "adj.", en: "Showing a critical or disrespectful attitude.", zh: "贬损的；轻蔑的", eg: "He made derogatory remarks about his rivals.", syn: "disparaging, belittling, insulting", ant: "complimentary, flattering", q: 10, role: "trap", blank: "ii" },
+  anomalous: { pos: "adj.", en: "Deviating from what is standard or expected; unusual.", zh: "反常的；异常的", eg: "The anomalous result made the team recheck their data.", syn: "irregular, abnormal, atypical", ant: "normal, typical, regular", q: 10, role: "trap", blank: "ii" },
+  ancient: { pos: "adj.", en: "Belonging to the very distant past; very old.", zh: "古老的；远古的", eg: "Smell may be our most ancient sense.", syn: "age-old, primeval, archaic", ant: "modern, recent", q: 11, role: "answer", blank: "i" },
+  "more recent in origin": { pos: "phr.", en: "Having come into being later in time than something else. In Q11 it contrasts with ancient: the smell system is newer than vision.", zh: "起源较晚的；（在时间上）较新的", eg: "The idea is more recent in origin than most people assume.", syn: "newer, later, more modern", ant: "older, more ancient", q: 11, role: "answer", blank: "iii" },
+  credulous: { pos: "adj.", en: "Too ready to believe things; gullible.", zh: "轻信的；易受骗的", eg: "Credulous buyers fell for the false claims.", syn: "gullible, naive, trusting", ant: "skeptical, suspicious", q: 11, role: "trap", blank: "ii" },
+  primeval: { pos: "adj.", en: "Belonging to the earliest age of the world; ancient and primitive.", zh: "原始的；太古的", eg: "The explorers entered a primeval forest.", syn: "primordial, prehistoric, ancient", ant: "modern, contemporary", q: 11, role: "ctx" },
+  noxious: { pos: "adj.", en: "Harmful, poisonous or very unpleasant.", zh: "有害的；有毒的", eg: "Noxious fumes drifted over the town.", syn: "toxic, harmful, poisonous", ant: "harmless, wholesome", q: 11, role: "ctx" },
+  discern: { pos: "v.", en: "To recognize or make out something that is hard to see or understand.", zh: "辨别；看出；识别", eg: "It was hard to discern any pattern in the data.", syn: "perceive, detect, distinguish", ant: "overlook, miss", q: 11, role: "ctx" },
+  perceptive: { pos: "adj.", en: "Quick to notice and understand things; having keen insight.", zh: "有洞察力的；敏锐的", eg: "A perceptive critic, she saw what the film was really about.", syn: "insightful, astute, observant", ant: "obtuse, oblivious", q: 12, role: "answer" },
+  discerning: { pos: "adj.", en: "Having or showing good judgment, especially about quality.", zh: "有辨别力的；眼光敏锐的", eg: "The gallery attracts a discerning public.", syn: "judicious, astute, tasteful", ant: "undiscriminating, indiscriminate", q: 12, role: "answer" },
+  subjective: { pos: "adj.", en: "Based on personal feelings or opinions instead of facts.", zh: "主观的；个人的", eg: "Whether a painting is beautiful is a subjective judgment.", syn: "personal, biased, impressionistic", ant: "objective, impartial", q: 12, role: "trap" },
+  arbitrary: { pos: "adj.", en: "Based on random choice or whim, not on reason or system.", zh: "任意的；武断的", eg: "The rule seemed arbitrary and unfair.", syn: "random, capricious, whimsical", ant: "reasoned, systematic", q: 12, role: "trap" },
+  volatile: { pos: "adj.", en: "Liable to change quickly and unpredictably, especially for the worse.", zh: "易变的；反复无常的", eg: "The market has been extremely volatile this year.", syn: "unstable, erratic, fickle", ant: "stable, steady", q: 12, role: "trap" },
+  impulsive: { pos: "adj.", en: "Acting on a sudden urge without thinking about the results.", zh: "冲动的；一时兴起的", eg: "His impulsive decision to quit surprised everyone.", syn: "rash, hasty, spontaneous", ant: "cautious, deliberate", q: 12, role: "trap" },
+  displace: { pos: "v.", en: "To take the place of; also to force out of the usual place.", zh: "取代；使离开原位", eg: "Cars gradually displaced horse-drawn carriages.", syn: "replace, supplant, oust", ant: "leave in place, retain", q: 13, role: "answer" },
+  supplant: { pos: "v.", en: "To take the place of something or someone, especially by force or because it is newer or better.", zh: "取代；排挤", eg: "Email has largely supplanted the letter.", syn: "replace, displace, supersede", ant: "retain, preserve", q: 13, role: "answer" },
+  augment: { pos: "v.", en: "To make something greater by adding to it.", zh: "增加；扩大", eg: "She took a night job to augment her income.", syn: "increase, boost, supplement", ant: "reduce, diminish", q: 13, role: "trap" },
+  endanger: { pos: "v.", en: "To put someone or something at risk of harm.", zh: "危及；使处于危险", eg: "Pollution endangers marine life.", syn: "imperil, threaten, jeopardize", ant: "protect, safeguard", q: 13, role: "trap" },
+  exiguous: { pos: "adj.", en: "Very small in amount; scanty.", zh: "微小的；稀少的", eg: "The exiguous evidence did not justify a conclusion.", syn: "meager, scanty, slight", ant: "abundant, ample", q: 14, role: "answer" },
+  tenuous: { pos: "adj.", en: "Very slight or weak; thin and lacking strength.", zh: "薄弱的；微弱的；纤细的", eg: "His tenuous connection to the case was soon dismissed.", syn: "flimsy, slight, shaky", ant: "substantial, solid", q: 14, role: "answer" },
+  acute: { pos: "adj.", en: "Severe or intense; also sharp and keen. (An acute angle is less than 90 degrees.)", zh: "剧烈的；敏锐的", eg: "Acute pain sent her straight to the hospital.", syn: "severe, intense, keen", ant: "mild, dull", q: 14, role: "trap" },
+  persistent: { pos: "adj.", en: "Continuing firmly or for a long time, often despite opposition.", zh: "持续的；坚持不懈的", eg: "A persistent cough kept him awake.", syn: "constant, enduring, relentless", ant: "intermittent, fleeting", q: 14, role: "trap" },
+  unrelenting: { pos: "adj.", en: "Not letting up in severity, strength or pace; constant.", zh: "不松懈的；无情的", eg: "The unrelenting heat lasted all week.", syn: "relentless, unremitting, persistent", ant: "gentle, easing", q: 14, role: "trap" },
+  truculence: { pos: "n.", en: "Eagerness to argue or fight; aggressive defiance.", zh: "好斗；挑衅；蛮横", eg: "The negotiator's truculence made agreement impossible.", syn: "aggressiveness, belligerence, hostility", ant: "gentleness, meekness", q: 15, role: "answer" },
+  belligerence: { pos: "n.", en: "Aggressive or hostile behavior; readiness to fight.", zh: "好战；挑衅态度", eg: "His belligerence in meetings alienated his colleagues.", syn: "hostility, aggression, truculence", ant: "peacefulness, amiability", q: 15, role: "answer" },
+  incredulity: { pos: "n.", en: "Unwillingness or inability to believe something.", zh: "怀疑；难以置信", eg: "She stared at him in incredulity.", syn: "disbelief, skepticism, doubt", ant: "credulity, belief", q: 15, role: "trap" },
+  bravado: { pos: "n.", en: "A showy display of boldness meant to impress or hide fear.", zh: "虚张声势；逞强", eg: "Behind his bravado, he was terrified.", syn: "swagger, bluster, boldness", ant: "modesty, timidity", q: 15, role: "trap" },
+  diffidence: { pos: "n.", en: "Lack of self-confidence; shyness and reluctance to speak out.", zh: "缺乏自信；羞怯", eg: "Her diffidence kept her from speaking in class.", syn: "timidity, shyness, reserve", ant: "confidence, assertiveness", q: 15, role: "trap" },
+  vociferous: { pos: "adj.", en: "Loud and forceful in expressing opinions or complaints.", zh: "大声疾呼的；喧嚷的", eg: "There was vociferous opposition to the plan.", syn: "clamorous, outspoken, strident", ant: "quiet, subdued", q: 15, role: "ctx" },
+  parsimonious: { pos: "adj.", en: "Extremely unwilling to spend money; stingy.", zh: "吝啬的；小气的", eg: "The parsimonious owner refused to pay for repairs.", syn: "stingy, miserly, tightfisted", ant: "generous, lavish", q: 16, role: "answer", blank: "ii" },
+  disputes: { pos: "v. (dispute)", en: "To argue against or question the truth of a claim. In Q16, Prose disputes the notion means she rejects it.", zh: "对…提出异议；质疑；否认", eg: "The senator disputes the accuracy of the report.", syn: "challenges, contests, denies", ant: "accepts, agrees with", q: 16, role: "answer", blank: "i" },
+  elitist: { pos: "adj.", en: "Favoring or belonging to a small, privileged group seen as superior.", zh: "精英主义的；优越感强的", eg: "The club's elitist rules excluded most applicants.", syn: "exclusive, snobbish, highbrow", ant: "egalitarian, inclusive", q: 16, role: "trap", blank: "ii" },
+  "self-aggrandizing": { pos: "adj.", en: "Making oneself seem more important or powerful than one is.", zh: "自我吹嘘的；抬高自己的", eg: "His self-aggrandizing speech was full of boasts.", syn: "boastful, self-promoting", ant: "modest, self-effacing", q: 16, role: "trap", blank: "ii" },
+  bestow: { pos: "v.", en: "To give or present something, often as an honor or gift.", zh: "授予；赠予", eg: "The university bestowed an honorary degree on her.", syn: "grant, confer, present", ant: "withhold, deprive", q: 16, role: "ctx" },
+  patron: { pos: "n.", en: "A person who gives money or support to an artist, cause or organization. Also a regular customer.", zh: "赞助人；资助者；老主顾", eg: "The wealthy patron funded the young painter for years.", syn: "benefactor, sponsor, supporter", ant: "opponent", q: 16, role: "ctx" },
+  forerunner: { pos: "n.", en: "Something that comes before and points the way to a later development.", zh: "先驱；前身", eg: "The telegraph was a forerunner of the telephone.", syn: "precursor, predecessor, harbinger", ant: "successor, descendant", q: 17, role: "answer", blank: "i" },
+  prerequisite: { pos: "n.", en: "Something that must exist or happen before something else can. In Q17, a prerequisite is needed, but not necessarily enough.", zh: "先决条件；前提", eg: "A degree is a prerequisite for the job.", syn: "requirement, precondition, necessity", ant: "consequence, result", q: 17, role: "answer", blank: "ii" },
+  "no firm evidence": { pos: "phr.", en: "There is no solid or reliable proof. Firm means strong and not easily doubted.", zh: "没有确凿证据", eg: "There is no firm evidence that the claim is true.", syn: "no solid proof, little support", ant: "strong evidence, clear proof", q: 17, role: "answer", blank: "iii" },
+  incised: { pos: "adj. (incise)", en: "Cut or carved into a surface with a sharp tool.", zh: "刻的；雕刻的", eg: "Symbols were incised on the clay tablet.", syn: "carved, engraved, etched", ant: "embossed, raised", q: 17, role: "ctx" },
+  posterity: { pos: "n.", en: "All future generations; people who come after us.", zh: "后代；子孙", eg: "The photographs were kept for posterity.", syn: "descendants, future generations", ant: "ancestors, forebears", q: 17, role: "trap", blank: "i" },
+  elaboration: { pos: "n.", en: "The act of adding detail; or a more developed form of something.", zh: "详尽阐述；精心制作", eg: "The theory needs elaboration before it can be tested.", syn: "expansion, development, detail", ant: "simplification, abridgment", q: 17, role: "trap", blank: "i" }
+};
+
+var SIMPLE = {
+  1: "The passage praises public radio news, so criticizing it would seem rude (churlish), and what the news receives is praise (approbation). Sincere and skepticism don't fit that praising tone.",
+  2: "Politics blocked contact with other countries, so French research became closed-off: insular and parochial. Biased doesn't fit, and you need two words that mean the same thing.",
+  3: "The prose is polished (high), so the feelings must be ugly (low): vile and base. Noble and lofty would make everything 'high', so there would be no strange blend.",
+  4: "Museums only show the best coins, so these coins are not typical: atypical and exceptional. Precious and enigmatic don't follow from 'beautiful and well-preserved'.",
+  5: "People think every source pushes its own line, so sorting true from false seems hopeless: slanted and tendentious. Imprecise only means not exact.",
+  6: "The author trusts people who are willing to act rationally, even though it is risky (E). The passage never says good and evil are easy to tell apart (C).",
+  7: "The author admires artists who face contradictions openly instead of hiding them, so they confront the truth about the human condition (D). They do not resolve (reconcile) the contradictions, so B is wrong.",
+  9: "Both blanks are about being a scary disease: unexplained (inexplicable) and so common it seems unavoidable (inevitable). Widespread just repeats 'common'.",
+  10: "The word used to be neutral and inoffensive (anodyne), just a functional term for government. Esoteric means only experts understand it, which doesn't fit 'widely seen'.",
+  11: "The passage is about age: smell is said to be ancient, but the system we have now is more recent in origin than vision. Reliability (G) is never discussed.",
+  12: "'Rightly' means artists were praised for judging art well: perceptive and discerning. Subjective is about personal taste, not good judgment.",
+  13: "Deserts spreading over fertile land take its place: displace and supplant. Endanger only says it is at risk.",
+  14: "She doubted you can avoid stress by spotting it, so the signs must be hard to spot: exiguous and tenuous. Persistent signs would be easy to see.",
+  15: "The workers were loud and fighting-minded (vociferous); that aggressive spirit vanished: truculence and belligerence. Incredulity means disbelief.",
+  16: "She had limited funds, so Prose rejects the idea that she was stingy (parsimonious). Elitist isn't answered by 'limited funds'.",
+  17: "'But' warns that the evidence is weak, so the last blank is 'no firm evidence'. 'Little serious doubt' would agree with the scholars, not contrast.",
+  8: "Look for words of confidence in people. The last sentence says comic art arouses courage in reason and trust in what humans can do. The 'comic community' sentence only says the audience is willing to accept the risks of acting rationally."
+};
+
+/* ---------- helpers ---------- */
+var $ = function (s) { return document.querySelector(s); };
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function store(k, v) { try { if (v === undefined) { return JSON.parse(localStorage.getItem(k) || "null"); } localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+var fixed = store("gre-fixed") || {};
+var retryLog = store("gre-retry") || {};
+var events = store("gre-events") || [];
+var calSel = null;
+var known = store("gre-known") || {};
+var state = { tab: "wrong", wFilter: "all", onlyOpen: false, qText: "", gText: "", hideKnown: false, mode: "list", card: 0, flipped: false, hit: null };
+
+function optText(b, k) { for (var i = 0; i < b.options.length; i++) { if (b.options[i][0] === k) { return b.options[i][1]; } } return ""; }
+function arr(x) { return Array.isArray(x) ? x : [x]; }
+function isIn(list, k) { return arr(list).indexOf(k) > -1; }
+function sameSet(a, b) { return arr(a).slice().sort().join("|") === arr(b).slice().sort().join("|"); }
+function blankIsRight(b) { return sameSet(b.you, b.right); }
+function slotText(b, keys) { return arr(keys).map(function (k) { return optText(b, k); }).join(" / "); }
+function slotPrefix(b, id) { return b.multi ? "" : "(" + id + ") "; }
+function qBlankErrors(q) { return q.blanks.filter(function (b) { return !blankIsRight(b); }).length; }
+function hi(text, term) {
+  var t = esc(text); if (!term) { return t; }
+  var re = new RegExp("(" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig");
+  return t.replace(re, "<mark>$1</mark>");
+}
+
+/* ---------- header ---------- */
+var TEST_DATE = "2026-11-01"; // exam day
+var calView = "week", calAnchor = null;
+var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+var HINT = "Each time you press Check answers in the Retry tab, the hour you did it is recorded here.";
+function dkey(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+function pad2(n) { return ("0" + n).slice(-2); }
+function midnight(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function fmtMD(d) { return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+function fmtShort(d) { return fmtMD(d) + " " + d.toLocaleDateString("en-US", { weekday: "short" }); }
+function fmtLong(d) { return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }); }
+function countLv(c) { return c === 0 ? 0 : c === 1 ? 1 : c === 2 ? 2 : c <= 4 ? 3 : 4; }
+function evTime(e) { return new Date(e.t).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) + " Q" + e.q + " " + e.sc + "/" + e.n; }
+function slotDetail(sel, slots) {
+  var sd = new Date(sel.slice(0, 10) + "T00:00:00"), sh = +sel.slice(11), list = slots[sel] || [];
+  return fmtLong(sd) + " · " + pad2(sh) + ":00–" + pad2(sh) + ":59 · " + (list.length ? list.map(evTime).join("  ·  ") : "no submissions");
+}
+function calNav(dir) {
+  var a = midnight(calAnchor || new Date());
+  if (dir === 0) { calAnchor = null; }
+  else if (calView === "day") { calAnchor = addDays(a, dir); }
+  else if (calView === "week") { calAnchor = addDays(a, 7 * dir); }
+  else { calAnchor = new Date(a.getFullYear(), a.getMonth() + dir, 1); }
+  renderHeader();
+}
+function hourMapHtml() {
+  var slots = {}, days = {};
+  events.forEach(function (e) {
+    var dt = new Date(e.t), dk0 = dkey(dt), sk0 = dk0 + "-" + dt.getHours();
+    (slots[sk0] = slots[sk0] || []).push(e); (days[dk0] = days[dk0] || []).push(e);
+  });
+  var now = new Date(), today = midnight(now), tkey = dkey(today), nowH = now.getHours();
+  var test = new Date(TEST_DATE + "T00:00:00");
+  var first = new Date(today);
+  events.forEach(function (e) { var dd = midnight(new Date(e.t)); if (dd < first) { first = dd; } });
+  var last = test > today ? test : today;
+  var anchor = midnight(calAnchor || today);
+  if (anchor < first) { anchor = first; }
+  if (anchor > last) { anchor = last; }
+  var ps, pe, label;
+  if (calView === "day") { ps = anchor; pe = anchor; label = fmtLong(anchor); }
+  else if (calView === "week") { ps = addDays(anchor, -anchor.getDay()); pe = addDays(ps, 6); label = fmtMD(ps) + " – " + fmtMD(pe); }
+  else { ps = new Date(anchor.getFullYear(), anchor.getMonth(), 1); pe = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0); label = ps.toLocaleDateString("en-US", { month: "long", year: "numeric" }); }
+  var psk = dkey(ps), pek = dkey(pe);
+  var total = events.filter(function (e) { var k = dkey(new Date(e.t)); return k >= psk && k <= pek; }).length;
+  var body = "", detail = "", h, d, i, r, dk, sk, c, lab, cls;
+
+  if (calView === "week") {
+    var hdr = '<span class="hh">hour</span>', rows = "";
+    for (h = 0; h < 24; h++) { hdr += '<span class="hh">' + (h % 3 === 0 ? h : "") + '</span>'; }
+    for (d = 0; d < 7; d++) {
+      var day = addDays(ps, d); dk = dkey(day);
+      var isTest = dk === TEST_DATE, isToday = dk === tkey, dayFuture = day > today;
+      var rcls = "rl" + (isTest ? " test" : isToday ? " today-l" : "");
+      var rtxt = fmtShort(day) + (isTest ? " · test" : isToday ? " · today" : "");
+      rows += dayFuture ? '<span class="' + rcls + '">' + rtxt + '</span>'
+                        : '<button class="' + rcls + '" data-goday="' + dk + '" title="Open this day">' + rtxt + '</button>';
+      for (h = 0; h < 24; h++) {
+        var future = dayFuture || (isToday && h > nowH);
+        sk = dk + "-" + h; c = slots[sk] ? slots[sk].length : 0;
+        lab = c + " submission" + (c === 1 ? "" : "s") + " · " + fmtLong(day) + " " + pad2(h) + ":00";
+        cls = "hc l" + countLv(c) + (future ? " fut" : "") + (isTest ? " test" : "") + (isToday && h === nowH ? " now" : "") + (sk === calSel ? " sel" : "");
+        rows += future ? '<span class="' + cls + '" title="' + lab + '"></span>'
+                       : '<button class="' + cls + '" data-slot="' + sk + '" title="' + lab + '" aria-label="' + lab + '"></button>';
+      }
+    }
+    body = '<div class="hm">' + hdr + rows + '</div>';
+    var selDay = calSel ? calSel.slice(0, 10) : "";
+    detail = selDay >= psk && selDay <= pek && calSel ? slotDetail(calSel, slots)
+           : (events.length ? "Tap an hour to see what you submitted, or a date to open that day." : HINT);
+  } else if (calView === "day") {
+    dk = psk;
+    var isT = dk === TEST_DATE, isTo = dk === tkey, dFut = ps > today, g = "";
+    for (r = 0; r < 4; r++) {
+      g += '<span class="rl">' + pad2(r * 6) + "–" + pad2(r * 6 + 5) + 'h</span>';
+      for (i = 0; i < 6; i++) {
+        h = r * 6 + i; sk = dk + "-" + h; c = slots[sk] ? slots[sk].length : 0;
+        var fut2 = dFut || (isTo && h > nowH);
+        lab = c + " submission" + (c === 1 ? "" : "s") + " · " + fmtLong(ps) + " " + pad2(h) + ":00";
+        cls = "dc l" + countLv(c) + (fut2 ? " fut" : "") + (isT ? " test" : "") + (isTo && h === nowH ? " now" : "") + (sk === calSel ? " sel" : "");
+        var inner = '<span class="dh">' + pad2(h) + ':00</span><span class="dn">' + (c || "") + '</span>';
+        g += fut2 ? '<span class="' + cls + '" title="' + lab + '">' + inner + '</span>'
+                  : '<button class="' + cls + '" data-slot="' + sk + '" title="' + lab + '" aria-label="' + lab + '">' + inner + '</button>';
+      }
+    }
+    body = '<div class="dayv">' + g + '</div>';
+    if (calSel && calSel.slice(0, 10) === dk) { detail = slotDetail(calSel, slots); }
+    else if (days[dk]) { detail = fmtLong(ps) + " · " + days[dk].map(evTime).join("  ·  "); }
+    else { detail = events.length ? "No submissions on " + fmtLong(ps) + "." : HINT; }
+  } else {
+    var cells = DOW.map(function (n) { return '<span class="dw">' + n + '</span>'; }).join("");
+    for (i = 0; i < ps.getDay(); i++) { cells += '<span></span>'; }
+    for (d = 1; d <= pe.getDate(); d++) {
+      var md = new Date(ps.getFullYear(), ps.getMonth(), d); dk = dkey(md);
+      c = days[dk] ? days[dk].length : 0;
+      var mFut = md > today;
+      lab = c + " submission" + (c === 1 ? "" : "s") + " · " + fmtLong(md);
+      cls = "mc l" + countLv(c) + (mFut ? " fut" : "") + (dk === TEST_DATE ? " test" : "") + (dk === tkey ? " now" : "");
+      cells += mFut ? '<span class="' + cls + '" title="' + lab + '">' + d + '</span>'
+                    : '<button class="' + cls + '" data-goday="' + dk + '" title="' + lab + '" aria-label="' + lab + '">' + d + '</button>';
+    }
+    body = '<div class="monv">' + cells + '</div>';
+    detail = events.length ? "Tap a day to open its hours." : HINT;
+  }
+
+  var daysLeft = Math.round((test - today) / 86400000);
+  var left = daysLeft > 0 ? daysLeft + " day" + (daysLeft === 1 ? "" : "s") + " to the test on " + fmtLong(test)
+           : daysLeft === 0 ? "the test is today" : "the test date has passed";
+  var segs = ["day", "week", "month"].map(function (v) {
+    return '<button class="chip" data-cv="' + v + '" aria-pressed="' + (v === calView) + '">' + v.charAt(0).toUpperCase() + v.slice(1) + '</button>';
+  }).join("");
+  var pager = '<button class="chip" data-cnav="-1" aria-label="Previous"' + (ps <= first ? " disabled" : "") + '>‹</button>' +
+    '<span class="plabel">' + esc(label) + '</span>' +
+    '<button class="chip" data-cnav="1" aria-label="Next"' + (pe >= last ? " disabled" : "") + '>›</button>' +
+    '<button class="chip" data-cnav="0">Today</button>';
+  return '<div class="cal-title">' + total + ' retry submission' + (total === 1 ? "" : "s") + ' in view · ' + left + '</div>' +
+    '<div class="cal-ctrl"><div class="seg">' + segs + '</div><div class="pager">' + pager + '</div></div>' +
+    '<div class="cal-scroll" id="cal-scroll" data-view="' + calView + '">' + body + '</div>' +
+    '<div class="cal-foot"><span class="detail">' + esc(detail) + '</span>' +
+    '<div class="legend"><span>Less</span><i class="sw l0"></i><i class="sw l1"></i><i class="sw l2"></i><i class="sw l3"></i><i class="sw l4"></i><span>More</span></div></div>';
+}
+
+function renderHeader() {
+  var wrongLoaded = QUESTIONS.length;
+  var oldCs = document.getElementById("cal-scroll"), keep = (oldCs && oldCs.getAttribute("data-view") === calView) ? oldCs.scrollLeft : 0;
+  $("#stats").innerHTML = hourMapHtml();
+  var cs = document.getElementById("cal-scroll"); if (cs) { cs.scrollLeft = keep; }
+  $("#n-wrong").textContent = QUESTIONS.length;
+  $("#n-gloss").textContent = Object.keys(WORDS).length;
+}
+
+/* ---------- pasted passages (kept in this browser only) ---------- */
+var PASSAGES = store("gre-passages") || {};
+function sentencesOf(t) {
+  return (t.replace(/\s+/g, " ").trim().match(/[^.!?]+[.!?]+["')]*/g) || []).map(function (x) { return x.trim(); });
+}
+function applyPassages() {
+  QUESTIONS.forEach(function (q) {
+    if (!q.sentPick) { return; }
+    var b = q.blanks[0];
+    if (!b.defOptions) { b.defOptions = b.options; b.defRight = b.right; }
+    var txt = PASSAGES[q.pkey], sents = txt ? sentencesOf(txt) : [], idx = -1;
+    sents.forEach(function (x, i) { if (x.toLowerCase().indexOf(q.sentPick) > -1) { idx = i; } });
+    if (sents.length === b.defOptions.length && idx > -1) {
+      b.options = sents.map(function (x, i) { return ["ABCDE".charAt(i), x]; });
+      b.right = "ABCDE".charAt(idx);
+    } else { b.options = b.defOptions; b.right = b.defRight; }
+  });
+}
+function rcPassage(q) {
+  var txt = PASSAGES[q.pkey];
+  var body = txt ? '<p class="passage rc">' + esc(txt) + '</p>'
+                 : '<p class="pp-note">The original passage is not stored here. Paste it once and it is used for every question on it.</p>';
+  return body + '<details class="pp"><summary>' + (txt ? "Edit passage" : "Paste passage") + '</summary>' +
+    '<textarea rows="8" placeholder="Paste the passage text here. It stays in this browser only.">' + esc(txt || "") + '</textarea>' +
+    '<div class="actions"><button class="toggle primary" data-ppsave="' + q.pkey + '">Save passage</button>' +
+    (txt ? '<button class="toggle" data-ppclear="' + q.pkey + '">Remove</button>' : "") + '</div></details>';
+}
+function refreshPassages() { applyPassages(); rtNew(); renderWrong(); renderRetry(); }
+
+/* ---------- wrong answers (simple) ---------- */
+function ansText(b, keys, letter) {
+  if (!keys || !keys.length) { return "not recorded"; }
+  if (b.multi) { return arr(keys).map(function (k) { return optText(b, k); }).join(", "); }
+  return (letter ? "(" + keys + ") " : "") + optText(b, keys);
+}
+function qAns(q, which) {
+  return q.blanks.map(function (b) {
+    var t = ansText(b, b[which], !!q.stem);
+    return q.blanks.length > 1 ? "(" + b.id + ") " + t : t;
+  }).join("  ·  ");
+}
+function qGroup(q) { return q.type.split(" · ")[0]; }
+function renderWrong() {
+  var groups = [];
+  QUESTIONS.forEach(function (q) { var g = qGroup(q); if (groups.indexOf(g) < 0) { groups.push(g); } });
+  $("#w-filters").innerHTML = ["all"].concat(groups).map(function (g) {
+    return '<button class="chip" data-wf="' + esc(g) + '" aria-pressed="' + (state.wFilter === g) + '">' + (g === "all" ? "All" : esc(g)) + '</button>';
+  }).join("");
+  var items = QUESTIONS.filter(function (q) { return state.wFilter === "all" || qGroup(q) === state.wFilter; });
+  $("#w-list").innerHTML = items.map(function (q) {
+    var text = q.stem
+      ? esc(q.stem) + (/[?.]$/.test(q.stem) ? "" : " …")
+      : esc(q.passage).replace(/\{(\w+)\}/g, function (m, id) { return '<span class="blankline">' + (q.blanks.length > 1 ? "(" + id + ") " : "") + '______</span>'; });
+    return '<article class="wq"><div class="wq-top"><span class="q-num">Q' + q.num + '</span><span class="label">' + esc(qGroup(q)) + '</span><span class="sp"></span>' +
+      '<button class="toggle" data-retryq="' + QUESTIONS.indexOf(q) + '">Retry</button></div>' +
+      '<p class="wq-text">' + text + '</p>' +
+      (q.pkey ? '<details class="pp"><summary>Passage</summary>' + rcPassage(q) + '</details>' : "") +
+      '<div class="wq-ans"><div class="wa bad"><span class="label">Your answer</span><span>' + esc(qAns(q, "you")) + '</span></div>' +
+      '<div class="wa good"><span class="label">Correct answer</span><span>' + esc(qAns(q, "right")) + '</span></div></div>' +
+      '<p class="wq-why"><b>Why:</b> ' + esc(SIMPLE[q.num] || "") + '</p></article>';
+  }).join("") || '<div class="empty">Nothing here yet.</div>';
+}
+
+/* ---------- glossary ---------- */
+function wordList() {
+  var term = state.gText.toLowerCase();
+  return Object.keys(WORDS).sort().filter(function (w) {
+    if (state.hideKnown && known[w]) { return false; }
+    if (!term) { return true; }
+    var e = WORDS[w];
+    return (w + " " + e.en + " " + e.zh + " " + e.syn + " " + e.ant).toLowerCase().indexOf(term) > -1;
+  });
+}
+var ROLE_LABEL = { answer: "correct answer", trap: "wrong choice", ctx: "in passage" };
+function renderGlossary() {
+  var list = wordList();
+  if (!list.length) { $("#g-view").innerHTML = '<div class="empty">No words match.</div>'; return; }
+  if (state.mode === "cards") { renderCards(list); return; }
+  $("#g-view").innerHTML = '<div class="gloss">' + list.map(function (w) {
+    var e = WORDS[w];
+    return '<article class="entry' + (known[w] ? " known" : "") + '" id="w-' + w + '">' +
+      '<h3>' + hi(w, state.gText) + '<small>' + e.pos + '</small></h3>' +
+      '<p class="def">' + hi(e.en, state.gText) + '</p>' +
+      '<p class="zh">' + hi(e.zh, state.gText) + '</p>' +
+      '<p class="eg">' + esc(e.eg) + '</p>' +
+      '<div class="rel"><b>syn</b><span>' + esc(e.syn) + '</span><b>ant</b><span>' + esc(e.ant) + '</span></div>' +
+      '<div class="entry-foot"><span class="roles">' + [e].concat(e.also || []).map(function (u) { return '<span class="role ' + u.role + '">' + ROLE_LABEL[u.role] + ' · Q' + u.q + (u.blank ? " (" + u.blank + ")" : "") + '</span>'; }).join("") + '</span>' +
+      '<button class="toggle" data-known="' + w + '" aria-pressed="' + (!!known[w]) + '">' + (known[w] ? "Known ✓" : "Mark known") + '</button></div></article>';
+  }).join("") + '</div>';
+}
+function renderCards(list) {
+  if (state.card >= list.length) { state.card = 0; }
+  var w = list[state.card], e = WORDS[w];
+  var face = state.flipped
+    ? '<div class="def">' + esc(e.en) + '</div><div class="zh">' + esc(e.zh) + '</div><div class="eg">' + esc(e.eg) + '</div><div class="rel" style="text-align:left"><b>syn</b><span>' + esc(e.syn) + '</span><b>ant</b><span>' + esc(e.ant) + '</span></div>'
+    : '<div class="big">' + esc(w) + '</div><div class="label">' + e.pos + ' · tap to reveal</div>';
+  $("#g-view").innerHTML = '<div class="deck"><div class="deck-bar"><span class="label">Card ' + (state.card + 1) + ' of ' + list.length + '</span>' +
+    '<button class="toggle" data-known="' + w + '" aria-pressed="' + (!!known[w]) + '">' + (known[w] ? "Known ✓" : "Mark known") + '</button></div>' +
+    '<button class="card" id="flip" aria-label="Flip card">' + face + '</button>' +
+    '<div class="deck-bar"><div class="grp"><button class="chip" id="prev">← Prev</button><button class="chip" id="next">Next →</button></div>' +
+    '<button class="chip" id="shuf">Shuffle</button></div></div>';
+}
+
+/* ---------- events ---------- */
+function setTab(t) {
+  state.tab = t;
+  ["wrong", "gloss", "retry"].forEach(function (k) {
+    $("#tab-" + k).setAttribute("aria-selected", String(k === t));
+    $("#panel-" + k).hidden = k !== t;
+  });
+  if (t === "wrong") { renderWrong(); }
+  if (t === "gloss") { renderGlossary(); }
+  if (t === "retry") { renderRetry(); }
+}
+document.addEventListener("click", function (ev) {
+  var t = ev.target.closest("button"); if (!t) { return; }
+  if (t.dataset.tab) { setTab(t.dataset.tab); }
+  else if (t.dataset.ppsave) {
+    var ta = t.closest("details").querySelector("textarea"), v = ta.value.trim();
+    if (v) { PASSAGES[t.dataset.ppsave] = v; } else { delete PASSAGES[t.dataset.ppsave]; }
+    store("gre-passages", PASSAGES); refreshPassages();
+  }
+  else if (t.dataset.ppclear) { delete PASSAGES[t.dataset.ppclear]; store("gre-passages", PASSAGES); refreshPassages(); }
+  else if (t.dataset.wf) { state.wFilter = t.dataset.wf; renderWrong(); }
+  else if (t.dataset.retryq !== undefined) { RT.qi = +t.dataset.retryq; rtNew(); setTab("retry"); }
+  else if (t.dataset.known) { known[t.dataset.known] = !known[t.dataset.known]; store("gre-known", known); renderGlossary(); }
+  else if (t.id === "flip") { state.flipped = !state.flipped; renderGlossary(); }
+  else if (t.id === "next") { state.card++; state.flipped = false; renderGlossary(); }
+  else if (t.id === "prev") { state.card = Math.max(0, state.card - 1); state.flipped = false; renderGlossary(); }
+  else if (t.id === "shuf") { state.card = Math.floor(Math.random() * wordList().length); state.flipped = false; renderGlossary(); }
+  else if (t.id === "g-unknown") { state.hideKnown = !state.hideKnown; t.setAttribute("aria-pressed", String(state.hideKnown)); state.card = 0; renderGlossary(); }
+  else if (t.id === "m-list" || t.id === "m-cards") {
+    state.mode = t.id === "m-list" ? "list" : "cards"; state.flipped = false; state.card = 0;
+    $("#m-list").setAttribute("aria-pressed", String(state.mode === "list"));
+    $("#m-cards").setAttribute("aria-pressed", String(state.mode === "cards"));
+    renderGlossary();
+  }
+});
+$("#g-search").addEventListener("input", function (e) { state.gText = e.target.value.trim(); state.card = 0; renderGlossary(); });
+document.addEventListener("keydown", function (e) {
+  if (state.tab !== "gloss" || state.mode !== "cards" || /INPUT/.test(document.activeElement.tagName)) { return; }
+  if (e.key === "ArrowRight") { state.card++; state.flipped = false; renderGlossary(); }
+  else if (e.key === "ArrowLeft") { state.card = Math.max(0, state.card - 1); state.flipped = false; renderGlossary(); }
+  else if (e.key === " " && document.activeElement.id !== "flip") { e.preventDefault(); state.flipped = !state.flipped; renderGlossary(); }
+});
+
+/* ---------- retry ---------- */
+var RT = { qi: 0, picks: {}, checked: false, shuffle: true, order: null };
+function rtQ() { return QUESTIONS[RT.qi]; }
+function rtNew() {
+  var q = rtQ(); if (!q) { return; }
+  RT.picks = {}; RT.checked = false; RT.order = {};
+  q.blanks.forEach(function (b) {
+    var ks = b.options.map(function (o) { return o[0]; });
+    if (RT.shuffle) {
+      for (var i = ks.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = ks[i]; ks[i] = ks[j]; ks[j] = tmp; }
+    }
+    RT.order[b.id] = ks;
+  });
+}
+function rtScore(q) { return q.blanks.filter(function (b) { return sameSet(RT.picks[b.id] || [], b.right); }).length; }
+function rtCheck() {
+  var q = rtQ(), sc = rtScore(q);
+  var lg = retryLog[q.num] || { tries: 0, best: 0, clean: 0, last: 0 };
+  lg.tries++; lg.last = sc; lg.best = Math.max(lg.best, sc);
+  if (sc === q.blanks.length) { lg.clean++; }
+  retryLog[q.num] = lg; store("gre-retry", retryLog);
+  events.push({ t: Date.now(), q: q.num, sc: sc, n: q.blanks.length }); store("gre-events", events);
+  var nd = new Date(); calSel = dkey(nd) + "-" + nd.getHours();
+  RT.checked = true; renderHeader(); renderRetry();
+}
+function rtPassage(q) {
+  return esc(q.passage).replace(/\{(\w+)\}/g, function (m, id) {
+    var b = q.blanks.filter(function (x) { return x.id === id; })[0];
+    var pick = RT.picks[id], has = b.multi ? (pick && pick.length) : pick;
+    if (!has) { return '<span class="slot">' + slotPrefix(b, id) + '______</span>'; }
+    var cls = RT.checked ? (sameSet(pick, b.right) ? " right" : " wrong") : "";
+    var more = b.multi && pick.length < b.multi ? " / ______" : "";
+    return '<span class="slot' + cls + '">' + slotPrefix(b, id) + esc(slotText(b, pick)) + more + '</span>';
+  });
+}
+function renderRetry() {
+  var el = $("#r-view");
+  if (!QUESTIONS.length) { el.innerHTML = '<div class="empty">No questions to retry yet.</div>'; return; }
+  if (!RT.order) { rtNew(); }
+  var q = rtQ(), n = q.blanks.length;
+  var pills = QUESTIONS.map(function (x, i) {
+    var lg = retryLog[x.num];
+    var mark = lg ? (lg.last === x.blanks.length ? " ✓" : " " + lg.last + "/" + x.blanks.length) : "";
+    return '<button class="chip" data-rq="' + i + '" aria-pressed="' + (i === RT.qi) + '">Q' + x.num + mark + '</button>';
+  }).join("");
+  var allPicked = q.blanks.every(function (b) { return b.multi ? (RT.picks[b.id] || []).length === b.multi : RT.picks[b.id]; });
+  var blanks = q.blanks.map(function (b) {
+    var btns = RT.order[b.id].map(function (k) {
+      var pressed = isIn(RT.picks[b.id] || [], k), cls = "";
+      if (RT.checked) { if (isIn(b.right, k)) { cls = " r-right"; } else if (pressed) { cls = " r-wrong"; } }
+      return '<button class="rbtn' + cls + '" data-rpick="' + b.id + ':' + k + '" aria-pressed="' + pressed + '"' + (RT.checked ? " disabled" : "") + '><span class="k">' + k + '</span><span>' + esc(optText(b, k)) + '</span></button>';
+    }).join("");
+    var v = RT.checked ? '<span class="verdict ' + (sameSet(RT.picks[b.id] || [], b.right) ? "ok" : "no") + '">' + (sameSet(RT.picks[b.id] || [], b.right) ? "right" : "wrong") + '</span>' : "";
+    return '<div class="blank"><h4>' + (b.title || (b.multi ? "Pick " + b.multi : "Blank (" + b.id + ")")) + v + '</h4>' + btns + '</div>';
+  }).join("");
+  var lg = retryLog[q.num];
+  var hist = lg ? "tries " + lg.tries + " · best " + lg.best + "/" + n + " · perfect " + lg.clean : "not tried yet";
+  var foot;
+  if (!RT.checked) {
+    foot = '<div class="actions"><button class="toggle primary" id="r-check"' + (allPicked ? "" : " disabled") + '>Check answers</button><span class="label">' + (allPicked ? "Ready" : (q.blanks.some(function (b) { return b.multi; }) ? "Select two answers" : "Pick one option for every blank")) + '</span></div>';
+  } else {
+    var sc = rtScore(q), full = sc === n;
+    var means = q.blanks.map(function (b) {
+      return b.options.map(function (o) {
+        var e = WORDS[o[1].split(" ").pop()];
+        return e ? '<div><b>' + esc(o[1]) + '</b> · ' + esc(e.zh) + ' · ' + esc(e.en) + '</div>' : "";
+      }).join("");
+    }).join("");
+    foot = '<div class="result ' + (full ? "full" : "part") + '"><b>' + sc + '/' + n + '</b><span>' + (full ? "All correct. Try again with shuffled options to confirm it sticks." : "Not quite. Read the explanation, then try again.") + '</span></div>' +
+      (means ? '<div class="means"><span class="label">Meanings of every option</span>' + means + '</div>' : "") +
+      '<div class="why"><span class="label">Explanation</span>' + q.why.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join("") + '</div>' +
+      '<div class="actions"><button class="toggle primary" id="r-again">Try again</button>' + (QUESTIONS.length > 1 ? '<button class="toggle" id="r-next">Next question</button>' : "") + '</div>';
+  }
+  el.innerHTML = '<div class="tools" style="margin-bottom:16px">' + pills + '<span style="flex:1"></span><button class="chip" data-rshuf="1" aria-pressed="' + RT.shuffle + '">Shuffle options</button></div>' +
+    '<article class="q"><div class="q-head"><span class="q-num">Q' + q.num + '</span><span>' + esc(q.type) + '</span><span class="sp"></span><span class="label">' + hist + '</span></div>' +
+    '<div class="q-body">' + (q.pkey ? rcPassage(q) : '<p class="passage">' + rtPassage(q) + '</p>') + (q.stem ? '<p class="stem">' + esc(q.stem) + '</p>' : "") + '<div class="blanks">' + blanks + '</div>' + foot + '</div></article>';
+}
+document.addEventListener("click", function (ev) {
+  var t = ev.target.closest("button"); if (!t || t.disabled) { return; }
+  if (t.dataset.rq !== undefined) { RT.qi = +t.dataset.rq; rtNew(); renderRetry(); }
+  else if (t.dataset.rpick) { if (RT.checked) { return; } var p = t.dataset.rpick.split(":");
+    var pb = rtQ().blanks.filter(function (x) { return x.id === p[0]; })[0];
+    if (pb.multi) {
+      var cur = (RT.picks[p[0]] || []).slice(), ix = cur.indexOf(p[1]);
+      if (ix > -1) { cur.splice(ix, 1); } else { cur.push(p[1]); if (cur.length > pb.multi) { cur.shift(); } }
+      RT.picks[p[0]] = cur;
+    } else { RT.picks[p[0]] = p[1]; }
+    renderRetry(); }
+  else if (t.dataset.rshuf) { RT.shuffle = !RT.shuffle; rtNew(); renderRetry(); }
+  else if (t.id === "r-check") { rtCheck(); }
+  else if (t.id === "r-again") { rtNew(); renderRetry(); }
+  else if (t.id === "r-next") { RT.qi = (RT.qi + 1) % QUESTIONS.length; rtNew(); renderRetry(); }
+  else if (t.dataset.slot) { calSel = t.dataset.slot; renderHeader(); }
+  else if (t.dataset.cv) { calView = t.dataset.cv; renderHeader(); }
+  else if (t.dataset.cnav !== undefined) { calNav(+t.dataset.cnav); }
+  else if (t.dataset.goday) { calAnchor = new Date(t.dataset.goday + "T00:00:00"); calView = "day"; renderHeader(); }
+});
+$("#n-retry").textContent = QUESTIONS.length;
+
+applyPassages(); renderHeader(); renderWrong(); renderGlossary();
+</script>
