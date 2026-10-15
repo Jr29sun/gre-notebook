@@ -235,6 +235,9 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
 .ed .hint { font-size: 0.84rem; color: var(--muted); }
 .ed-err { color: var(--bad); background: var(--bad-soft); border-radius: 6px; padding: 8px 12px; }
 @media (max-width: 520px) { .ed-opt { grid-template-columns: 1.6em minmax(0, 1fr) auto; } .ed-opt .ck { grid-column: 2 / -1; } }
+.ipa { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 400; color: var(--muted); }
+.say { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 1px 10px; font-size: 0.74rem; font-family: var(--font-ui); font-weight: 500; color: var(--accent); }
+.say:hover { background: var(--accent-soft); }
 .btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .l0 { background: var(--lv0); color: var(--lvt0); }
 .l1 { background: var(--lv1); color: var(--lvt1); }
@@ -926,7 +929,7 @@ function renderGlossary() {
   $("#g-view").innerHTML = '<div class="gloss">' + list.map(function (w) {
     var e = WORDS[w];
     return '<article class="entry' + (known[w] ? " known" : "") + '" id="w-' + w + '">' +
-      '<h3>' + hi(w, state.gText) + '<small>' + e.pos + '</small></h3>' +
+      '<h3>' + hi(w, state.gText) + '<small>' + e.pos + '</small>' + ipaHtml(w) + sayBtn(w) + '</h3>' +
       '<p class="def">' + hi(e.en, state.gText) + '</p>' +
       '<p class="zh">' + hi(e.zh, state.gText) + '</p>' +
       '<p class="eg">' + esc(e.eg) + '</p>' +
@@ -942,9 +945,9 @@ function renderCards(list) {
   var w = list[state.card], e = WORDS[w];
   var face = state.flipped
     ? '<div class="def">' + esc(e.en) + '</div><div class="zh">' + esc(e.zh) + '</div><div class="eg">' + esc(e.eg) + '</div><div class="rel" style="text-align:left"><b>syn</b><span>' + esc(e.syn) + '</span><b>ant</b><span>' + esc(e.ant) + '</span></div>'
-    : '<div class="big">' + esc(w) + '</div><div class="label">' + e.pos + ' · tap to reveal</div>';
+    : '<div class="big">' + esc(w) + '</div>' + ipaHtml(w) + '<div class="label">' + e.pos + ' · tap to reveal</div>';
   $("#g-view").innerHTML = '<div class="deck"><div class="deck-bar"><span class="label">Card ' + (state.card + 1) + ' of ' + list.length + '</span>' +
-    '<span class="btns"><button class="toggle" data-a="editw" data-i="' + esc(w) + '">Edit</button>' +
+    '<span class="btns">' + sayBtn(w) + '<button class="toggle" data-a="editw" data-i="' + esc(w) + '">Edit</button>' +
     '<button class="toggle" data-known="' + w + '" aria-pressed="' + (!!known[w]) + '">' + (known[w] ? "Known ✓" : "Mark known") + '</button></span></div>' +
     '<button class="card" id="flip" aria-label="Flip card">' + face + '</button>' +
     '<div class="deck-bar"><div class="grp"><button class="chip" id="prev">← Prev</button><button class="chip" id="next">Next →</button></div>' +
@@ -1097,6 +1100,15 @@ var USER = store("gre-user") || {}; USER.q = USER.q || {}; USER.w = USER.w || {}
 var BASE_Q = clone(QUESTIONS), BASE_W = clone(WORDS);
 var ED = null, CONF = null;
 function saveUser() { store("gre-user", USER); }
+var IPA = {"churlish": "ˈtʃɝːlɪʃ", "approbation": "ˌæprəˈbeɪʃən", "perspicacious": "ˌpɝːspɪˈkeɪʃəs", "sincere": "sɪnˈsɪr", "skepticism": "ˈskɛptɪˌsɪzəm", "vitriol": "ˈvɪtriˌɑːl", "facile": "ˈfæsəl", "tendentious": "tɛnˈdɛnʃəs", "meretricious": "ˌmɛrəˈtrɪʃəs", "superficial": "ˌsuːpɚˈfɪʃəl", "insular": "ˈɪnsjəlɚ", "parochial": "pəˈroʊkiəl", "biased": "ˈbaɪəst", "competitive": "kəmˈpɛtətɪv", "misleading": "mɪsˈliːdɪŋ", "uncharacteristically": "ˌʌnˌkærɪktəˈrɪstɪkli", "vile": "vaɪl", "base": "beɪs", "noble": "ˈnoʊbəl", "lofty": "ˈlɔːfti", "patriotic": "ˌpeɪtriˈɑːtɪk", "tender": "ˈtɛndɚ", "vigorous": "ˈvɪɡərəs", "prose": "proʊz", "sloppily": "ˈslɑːpɪli", "unkempt": "ʌnˈkɛmpt", "sentiment": "ˈsɛntɪmənt", "atypical": "eɪˈtɪpɪkəl", "exceptional": "ɪkˈsɛpʃənəl", "precious": "ˈprɛʃəs", "enigmatic": "ˌɛnɪɡˈmætɪk", "diverse": "daɪˈvɝːs", "disparate": "ˈdɪspərət", "elaborate": "ɪˈlæbərət", "slanted": "ˈslæntɪd", "imprecise": "ˌɪmprɪˈsaɪs", "splenetic": "splɪˈnɛtɪk", "surreptitious": "ˌsɝːəpˈtɪʃəs", "acrimonious": "ˌækrɪˈmoʊniəs", "futile": "ˈfjuːtəl", "discriminate": "dɪˈskrɪmɪneɪt", "comic": "ˈkɑːmɪk", "otherworldly": "ˌʌðɚˈwɝːldli", "mystify": "ˈmɪstɪfaɪ", "branding": "ˈbrændɪŋ", "accentuate": "ækˈsɛntʃueɪt", "extrasocial": "ˌɛkstrəˈsoʊʃəl", "transcendence": "trænˈsɛndəns", "compassionate": "kəmˈpæʃənət", "invoking": "ɪnˈvoʊkɪŋ", "reconcile": "ˈrɛkənsaɪl", "confront": "kənˈfrʌnt", "condemn": "kənˈdɛm", "subtle": "ˈsʌtəl", "rid": "rɪd", "deceptive": "dɪˈsɛptɪv", "inexplicable": "ˌɪnɪkˈsplɪkəbəl", "inevitable": "ɪnˈɛvɪtəbəl", "containable": "kənˈteɪnəbəl", "widespread": "ˈwaɪdˌsprɛd", "propitious": "prəˈpɪʃəs", "detrimental": "ˌdɛtrɪˈmɛntəl", "anodyne": "ˈænədaɪn", "esoteric": "ˌɛsəˈtɛrɪk", "derogatory": "dɪˈrɑːɡətɔːri", "anomalous": "əˈnɑːmələs", "ancient": "ˈeɪnʃənt", "credulous": "ˈkrɛdʒələs", "primeval": "praɪˈmiːvəl", "noxious": "ˈnɑːkʃəs", "discern": "dɪˈsɝːn", "perceptive": "pɚˈsɛptɪv", "discerning": "dɪˈsɝːnɪŋ", "subjective": "səbˈdʒɛktɪv", "arbitrary": "ˈɑːrbɪtrɛri", "volatile": "ˈvɑːlətəl", "impulsive": "ɪmˈpʌlsɪv", "displace": "dɪsˈpleɪs", "supplant": "səˈplænt", "augment": "ɔːɡˈmɛnt", "endanger": "ɪnˈdeɪndʒɚ", "exiguous": "ɪɡˈzɪɡjuəs", "tenuous": "ˈtɛnjuəs", "acute": "əˈkjuːt", "persistent": "pɚˈsɪstənt", "unrelenting": "ˌʌnrɪˈlɛntɪŋ", "truculence": "ˈtrʌkjələns", "belligerence": "bəˈlɪdʒərəns", "incredulity": "ˌɪnkrɪˈduːləti", "bravado": "brəˈvɑːdoʊ", "diffidence": "ˈdɪfɪdəns", "vociferous": "voʊˈsɪfərəs", "parsimonious": "ˌpɑːrsəˈmoʊniəs", "disputes": "dɪˈspjuːts", "elitist": "ɪˈliːtɪst", "self-aggrandizing": "ˌsɛlf əˈɡrændaɪzɪŋ", "bestow": "bɪˈstoʊ", "patron": "ˈpeɪtrən", "forerunner": "ˈfɔːrˌrʌnɚ", "prerequisite": "priːˈrɛkwəzɪt", "incised": "ɪnˈsaɪzd", "posterity": "pɑːˈstɛrəti", "elaboration": "ɪˌlæbəˈreɪʃən"};
+function ipaOf(w) { var e = WORDS[w] || {}; return e.ipa || IPA[w] || ""; }
+function ipaHtml(w) { var v = ipaOf(w); return v ? '<span class="ipa">/' + esc(v) + '/</span>' : ""; }
+function sayBtn(w) { return '<button class="say" data-say="' + esc(w) + '" aria-label="Listen to ' + esc(w) + '">▶ Listen</button>'; }
+document.addEventListener("click", function (ev) {
+  var t = ev.target.closest("button"); if (!t || !t.dataset.say) { return; }
+  try { var u = new SpeechSynthesisUtterance(t.dataset.say); u.lang = "en-US"; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+  catch (x) { t.textContent = "No audio on this browser"; }
+});
 function simpleOf(q) { return q.simple !== undefined ? q.simple : (SIMPLE[q.num] || ""); }
 function rebuildData() {
   var map = {}, k;
@@ -1135,10 +1147,10 @@ function edFromQ(q) {
       return { id: b.id, title: b.title || "", multi: b.multi || 0, opts: b.options.map(function (o) { return { t: o[1], you: isIn(b.you, o[0]), right: isIn(b.right, o[0]) }; }) };
     }) };
 }
-function edNewW() { return { type: "w", isNew: true, key: "", word: "", pos: "", en: "", zh: "", eg: "", syn: "", ant: "", q: "", role: "ctx", blank: "", also: null, err: "" }; }
+function edNewW() { return { type: "w", isNew: true, key: "", word: "", pos: "", ipa: "", en: "", zh: "", eg: "", syn: "", ant: "", q: "", role: "ctx", blank: "", also: null, err: "" }; }
 function edFromW(k) {
   var e = WORDS[k];
-  return { type: "w", isNew: false, key: k, word: k, pos: e.pos || "", en: e.en || "", zh: e.zh || "", eg: e.eg || "", syn: e.syn || "", ant: e.ant || "", q: e.q || "", role: e.role || "ctx", blank: e.blank || "", also: e.also || null, err: "" };
+  return { type: "w", isNew: false, key: k, word: k, pos: e.pos || "", ipa: ipaOf(k), en: e.en || "", zh: e.zh || "", eg: e.eg || "", syn: e.syn || "", ant: e.ant || "", q: e.q || "", role: e.role || "ctx", blank: e.blank || "", also: e.also || null, err: "" };
 }
 function fld(id, label, val, extra) { return '<label>' + label + '<input type="text" id="' + id + '" value="' + esc(val) + '"' + (extra || "") + '></label>'; }
 function area(id, label, val, rows) { return '<label>' + label + '<textarea id="' + id + '" rows="' + (rows || 3) + '">' + esc(val) + '</textarea></label>'; }
@@ -1179,7 +1191,7 @@ function edQHtml() {
 function edWHtml() {
   var E = ED, roles = [["answer", "Correct answer"], ["trap", "Wrong choice"], ["ctx", "In the passage"]];
   return '<div class="ed-head"><h2>' + (E.isNew ? "Add a word or phrase" : "Edit " + esc(E.key)) + '</h2><button class="chip" data-a="ed-cancel">Close</button></div>' +
-    '<div class="ed-row">' + fld("ew-word", "Word or phrase", E.word) + fld("ew-pos", "Part of speech (adj., v., n., phr.)", E.pos) + '</div>' +
+    '<div class="ed-row">' + fld("ew-word", "Word or phrase", E.word) + fld("ew-pos", "Part of speech (adj., v., n., phr.)", E.pos) + '</div>' + fld("ew-ipa", "Pronunciation (IPA, optional)", E.ipa) +
     area("ew-en", "English meaning", E.en, 3) + fld("ew-zh", "Chinese meaning", E.zh) + area("ew-eg", "Example sentence", E.eg, 2) +
     '<div class="ed-row">' + fld("ew-syn", "Synonyms", E.syn) + fld("ew-ant", "Antonyms", E.ant) + '</div>' +
     '<div class="ed-row"><label>From question number (optional)<input type="number" id="ew-q" min="0" value="' + esc(E.q) + '"></label>' +
@@ -1208,7 +1220,7 @@ function edSync() {
       });
     });
   } else {
-    ["word", "pos", "en", "zh", "eg", "syn", "ant", "q", "role", "blank"].forEach(function (f) { var x = g("ew-" + f); if (x !== null) { E[f] = x; } });
+    ["word", "pos", "ipa", "en", "zh", "eg", "syn", "ant", "q", "role", "blank"].forEach(function (f) { var x = g("ew-" + f); if (x !== null) { E[f] = x; } });
   }
 }
 function edSaveQ() {
@@ -1256,7 +1268,7 @@ function edSaveW() {
   else if ((E.isNew || key !== E.key) && WORDS[key]) { err = "\"" + key + "\" is already in the glossary. Edit that entry instead."; }
   else if (!E.en.trim() && !E.zh.trim()) { err = "Add an English or Chinese meaning."; }
   if (err) { E.err = err; edRender(); return; }
-  var e = { pos: E.pos.trim(), en: E.en.trim(), zh: E.zh.trim(), eg: E.eg.trim(), syn: E.syn.trim(), ant: E.ant.trim(), q: +E.q || 0, role: E.role };
+  var e = { pos: E.pos.trim(), ipa: E.ipa.trim().replace(/^\/|\/$/g, ""), en: E.en.trim(), zh: E.zh.trim(), eg: E.eg.trim(), syn: E.syn.trim(), ant: E.ant.trim(), q: +E.q || 0, role: E.role };
   if (E.blank.trim()) { e.blank = E.blank.trim(); }
   if (E.also) { e.also = E.also; }
   if (!E.isNew && key !== E.key) { USER.w[E.key] = null; if (known[E.key]) { known[key] = true; delete known[E.key]; store("gre-known", known); } }
